@@ -51,17 +51,17 @@ export default function Goals() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col space-y-4 md:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold text-[#DDDDDD]">Metas & Orçamentos</h1>
-          <p className="text-[#7C7C7C]">Defina e acompanhe seus objetivos financeiros</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD]">Metas & Orçamentos</h1>
+          <p className="text-[#7C7C7C] text-sm md:text-base">Defina e acompanhe seus objetivos financeiros</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-3">
           <Button
             onClick={() => navigate('/goals/new')}
-            className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+            className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 h-12 md:h-auto w-full md:w-auto"
           >
             <Target className="h-4 w-4 mr-2" />
             Nova Meta
@@ -69,7 +69,7 @@ export default function Goals() {
           <Button
             onClick={() => navigate('/budgets/new')}
             variant="outline"
-            className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C]"
+            className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C] h-12 md:h-auto w-full md:w-auto"
           >
             <Plus className="h-4 w-4 mr-2" />
             Novo Orçamento
@@ -77,11 +77,11 @@ export default function Goals() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
         {/* Goals Section */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#DDDDDD] flex items-center gap-2">
+            <h2 className="text-lg md:text-xl font-semibold text-[#DDDDDD] flex items-center gap-2">
               <Target className="h-5 w-5 text-[#EEB3E7]" />
               Metas Financeiras
             </h2>
@@ -94,7 +94,7 @@ export default function Goals() {
                 <p className="text-[#7C7C7C] mb-4">Nenhuma meta definida</p>
                 <Button
                   onClick={() => navigate('/goals/new')}
-                  className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+                  className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 h-12 md:h-auto w-full md:w-auto"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Criar primeira meta
@@ -115,10 +115,10 @@ export default function Goals() {
                     className="bg-[#000000] border-[#7C7C7C] hover:border-[#EEB3E7] transition-colors cursor-pointer"
                     onClick={() => navigate(`/goals/${goal.id}`)}
                   >
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-[#DDDDDD] text-lg">
+                    <CardHeader className="pb-3">
+                      <div className="flex flex-col space-y-2 md:flex-row md:justify-between md:items-start md:space-y-0">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-[#DDDDDD] text-base md:text-lg truncate">
                             {goal.name}
                           </CardTitle>
                           {goal.description && (
@@ -127,7 +127,7 @@ export default function Goals() {
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 text-[#7C7C7C] text-sm">
+                        <div className="flex items-center gap-1 text-[#7C7C7C] text-sm flex-shrink-0">
                           <Calendar className="h-4 w-4" />
                           {daysLeft === 0 ? 'Hoje!' : `${daysLeft} dias`}
                         </div>
@@ -153,7 +153,7 @@ export default function Goals() {
                             style={{ width: `${Math.min(progress, 100)}%` }}
                           />
                         </div>
-                        <div className="flex justify-between text-sm">
+                        <div className="flex justify-between text-xs md:text-sm">
                           <span className="text-[#DDDDDD]">
                             R$ {goal.current_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
@@ -173,7 +173,7 @@ export default function Goals() {
         {/* Budgets Section */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-[#DDDDDD] flex items-center gap-2">
+            <h2 className="text-lg md:text-xl font-semibold text-[#DDDDDD] flex items-center gap-2">
               <Plus className="h-5 w-5 text-[#EEB3E7]" />
               Orçamentos
             </h2>
@@ -187,7 +187,7 @@ export default function Goals() {
                 <Button
                   onClick={() => navigate('/budgets/new')}
                   variant="outline"
-                  className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C]"
+                  className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C] h-12 md:h-auto w-full md:w-auto"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Criar primeiro orçamento
@@ -209,15 +209,15 @@ export default function Goals() {
                     className="bg-[#000000] border-[#7C7C7C] hover:border-[#EEB3E7] transition-colors cursor-pointer"
                     onClick={() => navigate(`/budgets/${budget.id}`)}
                   >
-                    <CardContent className="p-6">
+                    <CardContent className="p-4 md:p-6">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div
-                            className="w-4 h-4 rounded-full"
+                            className="w-4 h-4 rounded-full flex-shrink-0"
                             style={{ backgroundColor: budget.category?.color || '#7C7C7C' }}
                           />
-                          <div>
-                            <p className="font-medium text-[#DDDDDD]">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-[#DDDDDD] truncate">
                               {budget.category?.name}
                             </p>
                             <p className="text-sm text-[#7C7C7C]">
@@ -225,11 +225,11 @@ export default function Goals() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-[#EEB3E7]">
+                        <div className="text-right flex-shrink-0 ml-4">
+                          <p className="font-bold text-[#EEB3E7] text-sm md:text-base">
                             R$ {budget.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </p>
-                          <p className="text-sm text-[#7C7C7C]">
+                          <p className="text-xs md:text-sm text-[#7C7C7C]">
                             Limite {periodText.toLowerCase()}
                           </p>
                         </div>
