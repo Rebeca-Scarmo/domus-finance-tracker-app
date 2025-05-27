@@ -30,6 +30,7 @@ export default function TransactionForm() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
     loadCategories();
@@ -39,16 +40,29 @@ export default function TransactionForm() {
   }, [id]);
 
   const loadCategories = async () => {
+    setLoadingCategories(true);
     try {
       const { data, error } = await (supabase as any)
         .from('categories')
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading categories:', error);
+        throw error;
+      }
+      
+      console.log('Categories loaded:', data);
       setCategories(data || []);
     } catch (error) {
       console.error('Error loading categories:', error);
+      toast({
+        title: "Erro ao carregar categorias",
+        description: "Não foi possível carregar as categorias. Verifique se você está logado.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingCategories(false);
     }
   };
 
@@ -86,10 +100,33 @@ export default function TransactionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!formData.category_id) {
+      toast({
+        title: "Categoria obrigatória",
+        description: "Por favor, selecione uma categoria.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await (supabase as any).auth.getUser();
+      
+      if (userError || !user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Você precisa estar logado para criar transações.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const transactionData = {
+        user_id: user.id,
         description: formData.description,
         amount: parseFloat(formData.amount),
         type: formData.type,
@@ -99,13 +136,18 @@ export default function TransactionForm() {
         recurrence_type: formData.is_recurring ? formData.recurrence_type : null,
       };
 
+      console.log('Saving transaction:', transactionData);
+
       if (isEditing) {
         const { error } = await (supabase as any)
           .from('transactions')
           .update(transactionData)
           .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating transaction:', error);
+          throw error;
+        }
 
         toast({
           title: "Transação atualizada!",
@@ -116,7 +158,10 @@ export default function TransactionForm() {
           .from('transactions')
           .insert([transactionData]);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating transaction:', error);
+          throw error;
+        }
 
         toast({
           title: "Transação criada!",
@@ -129,7 +174,7 @@ export default function TransactionForm() {
       console.error('Error saving transaction:', error);
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar a transação.",
+        description: "Não foi possível salvar a transação. Verifique os dados e tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -147,15 +192,15 @@ export default function TransactionForm() {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/transactions')}
-          className="text-[#DDDDDD] hover:bg-[#7C7C7C]"
+          className="text-[#DDDDDD] hover:bg-[#7C7C7C] flex-shrink-0"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold text-[#DDDDDD]">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD] truncate">
             {isEditing ? 'Editar Transação' : 'Nova Transação'}
           </h1>
-          <p className="text-[#7C7C7C]">
+          <p className="text-[#7C7C7C] text-sm md:text-base">
             {isEditing ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
           </p>
         </div>
@@ -210,36 +255,49 @@ export default function TransactionForm() {
                   <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                    <SelectItem value="income" className="text-[#DDDDDD]">Receita</SelectItem>
-                    <SelectItem value="expense" className="text-[#DDDDDD]">Despesa</SelectItem>
+                  <SelectContent className="bg-[#000000] border-[#7C7C7C] z-50">
+                    <SelectItem value="income" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Receita</SelectItem>
+                    <SelectItem value="expense" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Despesa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[#DDDDDD]">Categoria *</Label>
-                <Select
-                  value={formData.category_id}
-                  onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                >
-                  <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
-                    <SelectValue placeholder="Selecione uma categoria" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                    {filteredCategories.map((category) => (
-                      <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD]">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          {category.name}
+                {loadingCategories ? (
+                  <div className="text-[#7C7C7C] text-sm">Carregando categorias...</div>
+                ) : (
+                  <Select
+                    value={formData.category_id}
+                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+                  >
+                    <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#000000] border-[#7C7C7C] z-50">
+                      {filteredCategories.length === 0 ? (
+                        <div className="p-2 text-[#7C7C7C] text-sm">
+                          {categories.length === 0 
+                            ? 'Nenhuma categoria encontrada. Você precisa estar logado.'
+                            : `Nenhuma categoria de ${formData.type === 'income' ? 'receita' : 'despesa'} encontrada.`
+                          }
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      ) : (
+                        filteredCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD] hover:bg-[#7C7C7C]">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: category.color }}
+                              />
+                              {category.name}
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -266,11 +324,11 @@ export default function TransactionForm() {
                     <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
                       <SelectValue placeholder="Selecione a frequência" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                      <SelectItem value="daily" className="text-[#DDDDDD]">Diário</SelectItem>
-                      <SelectItem value="weekly" className="text-[#DDDDDD]">Semanal</SelectItem>
-                      <SelectItem value="monthly" className="text-[#DDDDDD]">Mensal</SelectItem>
-                      <SelectItem value="yearly" className="text-[#DDDDDD]">Anual</SelectItem>
+                    <SelectContent className="bg-[#000000] border-[#7C7C7C] z-50">
+                      <SelectItem value="daily" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Diário</SelectItem>
+                      <SelectItem value="weekly" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Semanal</SelectItem>
+                      <SelectItem value="monthly" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Mensal</SelectItem>
+                      <SelectItem value="yearly" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Anual</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -306,7 +364,7 @@ export default function TransactionForm() {
               </Button>
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || loadingCategories}
                 className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
               >
                 {loading ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
