@@ -34,36 +34,40 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed top-4 left-4 z-50 md:hidden text-[#DDDDDD] h-12 w-12"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </Button>
+      {/* Mobile top bar */}
+      <div className="md:hidden bg-[#000000] border-b border-[#7C7C7C] h-16 flex items-center justify-between px-4">
+        <h1 className="text-xl font-bold text-[#EEB3E7]">DOMUS</h1>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-[#DDDDDD] h-10 w-10"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      </div>
 
-      {/* Sidebar */}
+      {/* Desktop/Mobile Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 w-72 md:w-64 bg-[#000000] border-r border-[#7C7C7C] transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        md:translate-x-0 md:static md:inset-0
+        ${isOpen ? 'block' : 'hidden'} md:block
+        fixed md:static top-16 md:top-0 left-0 right-0 md:right-auto
+        w-full md:w-64 bg-[#000000] border-b md:border-r border-[#7C7C7C]
+        z-40 md:z-auto
       `}>
-        <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="flex items-center justify-center h-16 md:h-16 border-b border-[#7C7C7C] px-4">
-            <h1 className="text-2xl md:text-xl font-bold text-[#EEB3E7]">DOMUS</h1>
+        <div className="flex flex-col h-auto md:h-screen">
+          {/* Logo - only visible on desktop */}
+          <div className="hidden md:flex items-center justify-center h-16 border-b border-[#7C7C7C] px-4">
+            <h1 className="text-xl font-bold text-[#EEB3E7]">DOMUS</h1>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 px-4 py-4 md:py-6 space-y-1 md:space-y-2">
             {navigation.map((item) => (
               <NavLink
                 key={item.name}
                 to={item.href}
                 className={({ isActive }) =>
-                  `flex items-center px-4 py-4 md:py-3 text-base md:text-sm font-medium rounded-lg transition-colors ${
+                  `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
                     isActive
                       ? 'bg-[#EEB3E7] text-[#000000]'
                       : 'text-[#DDDDDD] hover:bg-[#7C7C7C] hover:text-[#DDDDDD]'
@@ -71,7 +75,7 @@ export function Sidebar() {
                 }
                 onClick={() => setIsOpen(false)}
               >
-                <item.icon className="mr-3 h-6 w-6 md:h-5 md:w-5" />
+                <item.icon className="mr-3 h-5 w-5" />
                 {item.name}
               </NavLink>
             ))}
@@ -81,10 +85,10 @@ export function Sidebar() {
           <div className="p-4 border-t border-[#7C7C7C]">
             <Button
               variant="ghost"
-              className="w-full justify-start text-[#DDDDDD] hover:bg-[#7C7C7C] hover:text-[#DDDDDD] h-12 md:h-auto py-4 md:py-2 text-base md:text-sm"
+              className="w-full justify-start text-[#DDDDDD] hover:bg-[#7C7C7C] hover:text-[#DDDDDD] text-sm py-2"
               onClick={handleSignOut}
             >
-              <LogOut className="mr-3 h-6 w-6 md:h-5 md:w-5" />
+              <LogOut className="mr-3 h-5 w-5" />
               Sair
             </Button>
           </div>

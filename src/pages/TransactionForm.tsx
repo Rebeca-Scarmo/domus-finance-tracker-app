@@ -7,9 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Category } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 export default function TransactionForm() {
@@ -22,49 +20,18 @@ export default function TransactionForm() {
     description: '',
     amount: '',
     type: 'expense' as 'income' | 'expense',
-    category_id: '',
     date: new Date().toISOString().split('T')[0],
     is_recurring: false,
     recurrence_type: undefined as string | undefined,
   });
 
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(true);
 
   useEffect(() => {
-    loadCategories();
     if (isEditing) {
       loadTransaction();
     }
   }, [id]);
-
-  const loadCategories = async () => {
-    setLoadingCategories(true);
-    try {
-      const { data, error } = await (supabase as any)
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        console.error('Error loading categories:', error);
-        throw error;
-      }
-      
-      console.log('Categories loaded:', data);
-      setCategories(data || []);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-      toast({
-        title: "Erro ao carregar categorias",
-        description: "Não foi possível carregar as categorias. Verifique se você está logado.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoadingCategories(false);
-    }
-  };
 
   const loadTransaction = async () => {
     if (!id) return;
@@ -82,7 +49,6 @@ export default function TransactionForm() {
           description: data.description,
           amount: data.amount.toString(),
           type: data.type,
-          category_id: data.category_id,
           date: data.date,
           is_recurring: data.is_recurring,
           recurrence_type: data.recurrence_type,
@@ -100,15 +66,6 @@ export default function TransactionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.category_id) {
-      toast({
-        title: "Categoria obrigatória",
-        description: "Por favor, selecione uma categoria.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setLoading(true);
 
@@ -130,7 +87,6 @@ export default function TransactionForm() {
         description: formData.description,
         amount: parseFloat(formData.amount),
         type: formData.type,
-        category_id: formData.category_id,
         date: formData.date,
         is_recurring: formData.is_recurring,
         recurrence_type: formData.is_recurring ? formData.recurrence_type : null,
@@ -182,28 +138,16 @@ export default function TransactionForm() {
     }
   };
 
-  const filteredCategories = categories.filter(cat => cat.type === formData.type);
-
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/transactions')}
-          className="text-[#DDDDDD] hover:bg-[#7C7C7C] flex-shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD] truncate">
-            {isEditing ? 'Editar Transação' : 'Nova Transação'}
-          </h1>
-          <p className="text-[#7C7C7C] text-sm md:text-base">
-            {isEditing ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
-          </p>
-        </div>
+      <div className="flex flex-col space-y-2">
+        <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD]">
+          {isEditing ? 'Editar Transação' : 'Nova Transação'}
+        </h1>
+        <p className="text-[#7C7C7C] text-sm md:text-base">
+          {isEditing ? 'Atualize os dados da transação' : 'Registre uma nova receita ou despesa'}
+        </p>
       </div>
 
       {/* Form */}
@@ -249,7 +193,7 @@ export default function TransactionForm() {
                 <Select
                   value={formData.type}
                   onValueChange={(value: 'income' | 'expense') => {
-                    setFormData({ ...formData, type: value, category_id: '' });
+                    setFormData({ ...formData, type: value });
                   }}
                 >
                   <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
@@ -260,44 +204,6 @@ export default function TransactionForm() {
                     <SelectItem value="expense" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Despesa</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-[#DDDDDD]">Categoria *</Label>
-                {loadingCategories ? (
-                  <div className="text-[#7C7C7C] text-sm">Carregando categorias...</div>
-                ) : (
-                  <Select
-                    value={formData.category_id}
-                    onValueChange={(value) => setFormData({ ...formData, category_id: value })}
-                  >
-                    <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#000000] border-[#7C7C7C] z-50">
-                      {filteredCategories.length === 0 ? (
-                        <div className="p-2 text-[#7C7C7C] text-sm">
-                          {categories.length === 0 
-                            ? 'Nenhuma categoria encontrada. Você precisa estar logado.'
-                            : `Nenhuma categoria de ${formData.type === 'income' ? 'receita' : 'despesa'} encontrada.`
-                          }
-                        </div>
-                      ) : (
-                        filteredCategories.map((category) => (
-                          <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD] hover:bg-[#7C7C7C]">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: category.color }}
-                              />
-                              {category.name}
-                            </div>
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -364,7 +270,7 @@ export default function TransactionForm() {
               </Button>
               <Button
                 type="submit"
-                disabled={loading || loadingCategories}
+                disabled={loading}
                 className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
               >
                 {loading ? 'Salvando...' : (isEditing ? 'Atualizar' : 'Salvar')}
