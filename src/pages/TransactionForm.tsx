@@ -40,7 +40,7 @@ export default function TransactionForm() {
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('categories')
         .select('*')
         .order('name');
@@ -56,7 +56,7 @@ export default function TransactionForm() {
     if (!id) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('transactions')
         .select('*')
         .eq('id', id)
@@ -100,7 +100,7 @@ export default function TransactionForm() {
       };
 
       if (isEditing) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('transactions')
           .update(transactionData)
           .eq('id', id);
@@ -112,7 +112,7 @@ export default function TransactionForm() {
           description: "A transação foi atualizada com sucesso.",
         });
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('transactions')
           .insert([transactionData]);
 

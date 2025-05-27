@@ -20,11 +20,11 @@ export default function Goals() {
   const loadGoalsAndBudgets = async () => {
     try {
       const [goalsResult, budgetsResult] = await Promise.all([
-        supabase
+        (supabase as any)
           .from('goals')
           .select('*')
           .order('created_at', { ascending: false }),
-        supabase
+        (supabase as any)
           .from('budgets')
           .select(`
             *,

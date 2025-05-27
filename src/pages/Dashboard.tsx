@@ -20,12 +20,12 @@ export default function Dashboard() {
   const loadDashboardData = async () => {
     try {
       const [transactionsResult, goalsResult] = await Promise.all([
-        supabase
+        (supabase as any)
           .from('transactions')
           .select('*')
           .order('date', { ascending: false })
           .limit(5),
-        supabase
+        (supabase as any)
           .from('goals')
           .select('*')
           .eq('is_completed', false)

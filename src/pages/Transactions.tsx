@@ -22,7 +22,7 @@ export default function Transactions() {
 
   const loadTransactions = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('transactions')
         .select(`
           *,
@@ -41,7 +41,7 @@ export default function Transactions() {
 
   const loadCategories = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('categories')
         .select('*')
         .order('name');
@@ -154,7 +154,7 @@ export default function Transactions() {
                   </div>
                   <div className="text-right flex-shrink-0 ml-4">
                     <div className={`font-bold text-base md:text-lg ${
-                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                      transaction.type === 'income' ? 'text-[#EEB3E7]' : 'text-[#7C7C7C]'
                     }`}>
                       {transaction.type === 'income' ? '+' : '-'}
                       R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
