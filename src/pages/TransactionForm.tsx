@@ -37,7 +37,7 @@ export default function TransactionForm() {
     if (!id) return;
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('transactions')
         .select('*')
         .eq('id', id)
@@ -71,7 +71,7 @@ export default function TransactionForm() {
 
     try {
       // Get current user
-      const { data: { user }, error: userError } = await (supabase as any).auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
       
       if (userError || !user) {
         toast({
@@ -90,12 +90,13 @@ export default function TransactionForm() {
         date: formData.date,
         is_recurring: formData.is_recurring,
         recurrence_type: formData.is_recurring ? formData.recurrence_type : null,
+        category_id: null, // Removed category since we don't have category selection anymore
       };
 
       console.log('Saving transaction:', transactionData);
 
       if (isEditing) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('transactions')
           .update(transactionData)
           .eq('id', id);
@@ -110,7 +111,7 @@ export default function TransactionForm() {
           description: "A transação foi atualizada com sucesso.",
         });
       } else {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('transactions')
           .insert([transactionData]);
 
