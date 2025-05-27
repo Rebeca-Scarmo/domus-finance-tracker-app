@@ -64,7 +64,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD]">Dashboard</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD]">Tela Inicial</h1>
           <p className="text-[#7C7C7C] text-sm md:text-base">Visão geral das suas finanças</p>
         </div>
         <Button
@@ -86,7 +86,7 @@ export default function Dashboard() {
             <DollarSign className="h-4 w-4 text-[#EEB3E7]" />
           </CardHeader>
           <CardContent>
-            <div className={`text-xl md:text-2xl font-bold ${balance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <div className={`text-xl md:text-2xl font-bold ${balance >= 0 ? 'text-[#EEB3E7]' : 'text-[#7C7C7C]'}`}>
               R$ {balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
@@ -97,10 +97,10 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-[#DDDDDD]">
               Receitas
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-500" />
+            <TrendingUp className="h-4 w-4 text-[#EEB3E7]" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl md:text-2xl font-bold text-green-500">
+            <div className="text-xl md:text-2xl font-bold text-[#EEB3E7]">
               R$ {totalIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
@@ -111,10 +111,10 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium text-[#DDDDDD]">
               Despesas
             </CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-500" />
+            <TrendingDown className="h-4 w-4 text-[#7C7C7C]" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl md:text-2xl font-bold text-red-500">
+            <div className="text-xl md:text-2xl font-bold text-[#7C7C7C]">
               R$ {totalExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
           </CardContent>
@@ -162,7 +162,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                     <div className={`font-bold text-sm md:text-base ${
-                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                      transaction.type === 'income' ? 'text-[#EEB3E7]' : 'text-[#7C7C7C]'
                     }`}>
                       {transaction.type === 'income' ? '+' : '-'}
                       R$ {Number(transaction.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
