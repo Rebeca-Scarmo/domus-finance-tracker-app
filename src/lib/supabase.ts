@@ -10,15 +10,22 @@ export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KE
 // Transaction operations
 export const transactionOperations = {
   async getAll() {
-    console.log('Getting all transactions...');
+    console.log('=== BUSCANDO TODAS AS TRANSAÇÕES ===');
     
     try {
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
-      if (userError || !user) {
-        console.error('User not authenticated:', userError);
-        throw new Error('User not authenticated');
+      if (userError) {
+        console.error('Erro de autenticação:', userError);
+        return { data: null, error: userError };
       }
+
+      if (!user) {
+        console.error('Usuário não autenticado');
+        return { data: null, error: new Error('Usuário não autenticado') };
+      }
+
+      console.log('Buscando transações para o usuário:', user.id);
 
       const { data, error } = await supabaseClient
         .from('transactions')
@@ -27,27 +34,32 @@ export const transactionOperations = {
         .order('date', { ascending: false });
       
       if (error) {
-        console.error('Error fetching transactions:', error);
-        throw error;
+        console.error('Erro ao buscar transações:', error);
+        return { data: null, error };
       }
 
-      console.log('Transactions fetched successfully:', data);
+      console.log('Transações encontradas:', data?.length || 0);
       return { data: data as DatabaseTransaction[], error: null };
     } catch (error) {
-      console.error('Error in getAll:', error);
+      console.error('Erro inesperado em getAll:', error);
       return { data: null, error };
     }
   },
 
   async getById(id: string) {
-    console.log('Getting transaction by id:', id);
+    console.log('=== BUSCANDO TRANSAÇÃO POR ID ===', id);
     
     try {
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
-      if (userError || !user) {
-        console.error('User not authenticated:', userError);
-        throw new Error('User not authenticated');
+      if (userError) {
+        console.error('Erro de autenticação:', userError);
+        return { data: null, error: userError };
+      }
+
+      if (!user) {
+        console.error('Usuário não autenticado');
+        return { data: null, error: new Error('Usuário não autenticado') };
       }
 
       const { data, error } = await supabaseClient
@@ -58,34 +70,42 @@ export const transactionOperations = {
         .single();
       
       if (error) {
-        console.error('Error fetching transaction:', error);
-        throw error;
+        console.error('Erro ao buscar transação:', error);
+        return { data: null, error };
       }
 
-      console.log('Transaction fetched successfully:', data);
+      console.log('Transação encontrada:', data);
       return { data: data as DatabaseTransaction, error: null };
     } catch (error) {
-      console.error('Error in getById:', error);
+      console.error('Erro inesperado em getById:', error);
       return { data: null, error };
     }
   },
 
   async create(transaction: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>) {
-    console.log('Creating transaction:', transaction);
+    console.log('=== CRIANDO NOVA TRANSAÇÃO ===');
+    console.log('Dados recebidos:', transaction);
     
     try {
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
-      if (userError || !user) {
-        console.error('User not authenticated:', userError);
-        throw new Error('User not authenticated');
+      if (userError) {
+        console.error('Erro de autenticação:', userError);
+        return { data: null, error: userError };
       }
 
-      // Ensure user_id matches authenticated user
+      if (!user) {
+        console.error('Usuário não autenticado');
+        return { data: null, error: new Error('Usuário não autenticado') };
+      }
+
+      // Garantir que o user_id está correto
       const transactionWithUserId = {
         ...transaction,
         user_id: user.id
       };
+
+      console.log('Inserindo no Supabase:', transactionWithUserId);
 
       const { data, error } = await supabaseClient
         .from('transactions')
@@ -94,27 +114,34 @@ export const transactionOperations = {
         .single();
       
       if (error) {
-        console.error('Error creating transaction:', error);
-        throw error;
+        console.error('Erro do Supabase ao criar:', error);
+        return { data: null, error };
       }
 
-      console.log('Transaction created successfully:', data);
+      console.log('Transação criada com sucesso:', data);
       return { data: data as DatabaseTransaction, error: null };
     } catch (error) {
-      console.error('Error in create:', error);
+      console.error('Erro inesperado em create:', error);
       return { data: null, error };
     }
   },
 
   async update(id: string, updates: Partial<Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>>) {
-    console.log('Updating transaction:', id, updates);
+    console.log('=== ATUALIZANDO TRANSAÇÃO ===');
+    console.log('ID:', id);
+    console.log('Atualizações:', updates);
     
     try {
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
-      if (userError || !user) {
-        console.error('User not authenticated:', userError);
-        throw new Error('User not authenticated');
+      if (userError) {
+        console.error('Erro de autenticação:', userError);
+        return { data: null, error: userError };
+      }
+
+      if (!user) {
+        console.error('Usuário não autenticado');
+        return { data: null, error: new Error('Usuário não autenticado') };
       }
 
       const { data, error } = await supabaseClient
@@ -126,27 +153,32 @@ export const transactionOperations = {
         .single();
       
       if (error) {
-        console.error('Error updating transaction:', error);
-        throw error;
+        console.error('Erro do Supabase ao atualizar:', error);
+        return { data: null, error };
       }
 
-      console.log('Transaction updated successfully:', data);
+      console.log('Transação atualizada com sucesso:', data);
       return { data: data as DatabaseTransaction, error: null };
     } catch (error) {
-      console.error('Error in update:', error);
+      console.error('Erro inesperado em update:', error);
       return { data: null, error };
     }
   },
 
   async delete(id: string) {
-    console.log('Deleting transaction:', id);
+    console.log('=== DELETANDO TRANSAÇÃO ===', id);
     
     try {
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
-      if (userError || !user) {
-        console.error('User not authenticated:', userError);
-        throw new Error('User not authenticated');
+      if (userError) {
+        console.error('Erro de autenticação:', userError);
+        return { error: userError };
+      }
+
+      if (!user) {
+        console.error('Usuário não autenticado');
+        return { error: new Error('Usuário não autenticado') };
       }
 
       const { error } = await supabaseClient
@@ -156,14 +188,14 @@ export const transactionOperations = {
         .eq('user_id', user.id);
       
       if (error) {
-        console.error('Error deleting transaction:', error);
-        throw error;
+        console.error('Erro do Supabase ao deletar:', error);
+        return { error };
       }
 
-      console.log('Transaction deleted successfully');
+      console.log('Transação deletada com sucesso');
       return { error: null };
     } catch (error) {
-      console.error('Error in delete:', error);
+      console.error('Erro inesperado em delete:', error);
       return { error };
     }
   }

@@ -55,7 +55,7 @@ export function useTransactionForm() {
           type: data.type,
           date: data.date,
           is_recurring: data.is_recurring,
-          recurrence_type: data.recurrence_type || undefined,
+          recurrence_type: data.recurrence_type as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined,
         });
       }
     } catch (error) {
@@ -70,20 +70,22 @@ export function useTransactionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted with data:', formData);
+    console.log('=== INICIANDO SALVAMENTO ===');
+    console.log('Dados do formulário:', formData);
 
-    if (!formData.description.trim() || !formData.amount) {
-      console.log('Validation failed: missing required fields');
+    // Validação básica
+    if (!formData.description.trim()) {
+      console.log('Erro: Descrição vazia');
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos obrigatórios.",
+        title: "Campo obrigatório",
+        description: "A descrição é obrigatória.",
         variant: "destructive",
       });
       return;
     }
 
-    if (isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
-      console.log('Validation failed: invalid amount');
+    if (!formData.amount || isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
+      console.log('Erro: Valor inválido');
       toast({
         title: "Valor inválido",
         description: "Por favor, insira um valor válido maior que zero.",
@@ -95,21 +97,23 @@ export function useTransactionForm() {
     setLoading(true);
 
     try {
-      console.log('Checking user authentication...');
+      // Verificar autenticação
+      console.log('Verificando autenticação...');
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
       if (userError) {
-        console.error('Authentication error:', userError);
-        throw new Error('Erro de autenticação: ' + userError.message);
+        console.error('Erro de autenticação:', userError);
+        throw new Error('Erro de autenticação. Faça login novamente.');
       }
       
       if (!user) {
-        console.error('No user found');
+        console.error('Usuário não encontrado');
         throw new Error('Usuário não encontrado. Faça login novamente.');
       }
 
-      console.log('User authenticated:', user.id);
+      console.log('Usuário autenticado:', user.id);
 
+      // Preparar dados para salvar
       const transactionData: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'> = {
         user_id: user.id,
         description: formData.description.trim(),
@@ -117,48 +121,50 @@ export function useTransactionForm() {
         type: formData.type,
         date: formData.date,
         is_recurring: formData.is_recurring,
-        recurrence_type: formData.is_recurring ? (formData.recurrence_type || null) : null,
+        recurrence_type: formData.is_recurring && formData.recurrence_type ? formData.recurrence_type : null,
         category_id: null,
       };
 
-      console.log('Transaction data to save:', transactionData);
+      console.log('Dados preparados para salvar:', transactionData);
 
+      let result;
+      
       if (isEditing) {
-        console.log('Updating existing transaction...');
-        const { data, error } = await transactionOperations.update(id!, transactionData);
-
-        if (error) {
-          console.error('Error updating transaction:', error);
-          throw new Error('Erro ao atualizar transação: ' + (error.message || 'Erro desconhecido'));
-        }
-
-        console.log('Transaction updated successfully:', data);
-        toast({
-          title: "Transação atualizada!",
-          description: "A transação foi atualizada com sucesso.",
-        });
+        console.log('Atualizando transação existente...');
+        result = await transactionOperations.update(id!, transactionData);
       } else {
-        console.log('Creating new transaction...');
-        const { data, error } = await transactionOperations.create(transactionData);
-
-        if (error) {
-          console.error('Error creating transaction:', error);
-          throw new Error('Erro ao criar transação: ' + (error.message || 'Erro desconhecido'));
-        }
-
-        console.log('Transaction created successfully:', data);
-        toast({
-          title: "Transação criada!",
-          description: "A transação foi registrada com sucesso.",
-        });
+        console.log('Criando nova transação...');
+        result = await transactionOperations.create(transactionData);
       }
+
+      if (result.error) {
+        console.error('Erro na operação:', result.error);
+        throw new Error(result.error.message || 'Erro ao salvar transação');
+      }
+
+      console.log('Transação salva com sucesso:', result.data);
+
+      toast({
+        title: isEditing ? "Transação atualizada!" : "Transação criada!",
+        description: isEditing ? "A transação foi atualizada com sucesso." : "A transação foi registrada com sucesso.",
+      });
 
       navigate('/transactions');
     } catch (error: any) {
-      console.error('Error saving transaction:', error);
+      console.error('=== ERRO NO SALVAMENTO ===');
+      console.error('Erro completo:', error);
+      
+      let errorMessage = "Não foi possível salvar a transação.";
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
       toast({
         title: "Erro ao salvar",
-        description: error.message || "Não foi possível salvar a transação. Verifique os dados e tente novamente.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
