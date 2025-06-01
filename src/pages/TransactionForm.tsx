@@ -7,9 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { supabase } from '@/integrations/supabase/client';
+import { supabaseClient, transactionOperations } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-import { DatabaseTransaction } from '@/types/database';
 
 export default function TransactionForm() {
   const navigate = useNavigate();
@@ -38,22 +37,17 @@ export default function TransactionForm() {
     if (!id) return;
 
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await transactionOperations.getById(id);
 
       if (error) throw error;
       if (data) {
-        const transaction = data as DatabaseTransaction;
         setFormData({
-          description: transaction.description,
-          amount: transaction.amount.toString(),
-          type: transaction.type,
-          date: transaction.date,
-          is_recurring: transaction.is_recurring,
-          recurrence_type: transaction.recurrence_type || undefined,
+          description: data.description,
+          amount: data.amount.toString(),
+          type: data.type,
+          date: data.date,
+          is_recurring: data.is_recurring,
+          recurrence_type: data.recurrence_type || undefined,
         });
       }
     } catch (error) {
@@ -69,11 +63,20 @@ export default function TransactionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.description.trim() || !formData.amount) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
       if (userError || !user) {
         toast({
@@ -86,22 +89,19 @@ export default function TransactionForm() {
 
       const transactionData = {
         user_id: user.id,
-        description: formData.description,
+        description: formData.description.trim(),
         amount: parseFloat(formData.amount),
         type: formData.type,
         date: formData.date,
         is_recurring: formData.is_recurring,
-        recurrence_type: formData.is_recurring ? formData.recurrence_type : null,
+        recurrence_type: formData.is_recurring ? formData.recurrence_type || null : null,
         category_id: null,
       };
 
       console.log('Saving transaction:', transactionData);
 
       if (isEditing) {
-        const { error } = await supabase
-          .from('transactions')
-          .update(transactionData)
-          .eq('id', id);
+        const { error } = await transactionOperations.update(id!, transactionData);
 
         if (error) {
           console.error('Error updating transaction:', error);
@@ -113,9 +113,7 @@ export default function TransactionForm() {
           description: "A transação foi atualizada com sucesso.",
         });
       } else {
-        const { error } = await supabase
-          .from('transactions')
-          .insert([transactionData]);
+        const { error } = await transactionOperations.create(transactionData);
 
         if (error) {
           console.error('Error creating transaction:', error);
@@ -183,6 +181,7 @@ export default function TransactionForm() {
                   id="amount"
                   type="number"
                   step="0.01"
+                  min="0"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   required

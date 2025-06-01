@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatabaseTransaction } from '@/types/database';
+import { transactionOperations } from '@/lib/supabase';
 
 export default function Transactions() {
   const navigate = useNavigate();
@@ -20,13 +20,10 @@ export default function Transactions() {
 
   const loadTransactions = async () => {
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .order('date', { ascending: false });
+      const { data, error } = await transactionOperations.getAll();
 
       if (error) throw error;
-      setTransactions((data as DatabaseTransaction[]) || []);
+      setTransactions(data || []);
     } catch (error) {
       console.error('Error loading transactions:', error);
     } finally {
