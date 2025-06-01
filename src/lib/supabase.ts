@@ -10,51 +10,161 @@ export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KE
 // Transaction operations
 export const transactionOperations = {
   async getAll() {
-    const { data, error } = await supabaseClient
-      .from('transactions')
-      .select('*')
-      .order('date', { ascending: false });
+    console.log('Getting all transactions...');
     
-    return { data: data as DatabaseTransaction[], error };
+    try {
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('User not authenticated:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabaseClient
+        .from('transactions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
+
+      console.log('Transactions fetched successfully:', data);
+      return { data: data as DatabaseTransaction[], error: null };
+    } catch (error) {
+      console.error('Error in getAll:', error);
+      return { data: null, error };
+    }
   },
 
   async getById(id: string) {
-    const { data, error } = await supabaseClient
-      .from('transactions')
-      .select('*')
-      .eq('id', id)
-      .single();
+    console.log('Getting transaction by id:', id);
     
-    return { data: data as DatabaseTransaction, error };
+    try {
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('User not authenticated:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabaseClient
+        .from('transactions')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching transaction:', error);
+        throw error;
+      }
+
+      console.log('Transaction fetched successfully:', data);
+      return { data: data as DatabaseTransaction, error: null };
+    } catch (error) {
+      console.error('Error in getById:', error);
+      return { data: null, error };
+    }
   },
 
   async create(transaction: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>) {
-    const { data, error } = await supabaseClient
-      .from('transactions')
-      .insert([transaction])
-      .select()
-      .single();
+    console.log('Creating transaction:', transaction);
     
-    return { data: data as DatabaseTransaction, error };
+    try {
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('User not authenticated:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      // Ensure user_id matches authenticated user
+      const transactionWithUserId = {
+        ...transaction,
+        user_id: user.id
+      };
+
+      const { data, error } = await supabaseClient
+        .from('transactions')
+        .insert([transactionWithUserId])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating transaction:', error);
+        throw error;
+      }
+
+      console.log('Transaction created successfully:', data);
+      return { data: data as DatabaseTransaction, error: null };
+    } catch (error) {
+      console.error('Error in create:', error);
+      return { data: null, error };
+    }
   },
 
   async update(id: string, updates: Partial<Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>>) {
-    const { data, error } = await supabaseClient
-      .from('transactions')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    console.log('Updating transaction:', id, updates);
     
-    return { data: data as DatabaseTransaction, error };
+    try {
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('User not authenticated:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabaseClient
+        .from('transactions')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error updating transaction:', error);
+        throw error;
+      }
+
+      console.log('Transaction updated successfully:', data);
+      return { data: data as DatabaseTransaction, error: null };
+    } catch (error) {
+      console.error('Error in update:', error);
+      return { data: null, error };
+    }
   },
 
   async delete(id: string) {
-    const { error } = await supabaseClient
-      .from('transactions')
-      .delete()
-      .eq('id', id);
+    console.log('Deleting transaction:', id);
     
-    return { error };
+    try {
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      
+      if (userError || !user) {
+        console.error('User not authenticated:', userError);
+        throw new Error('User not authenticated');
+      }
+
+      const { error } = await supabaseClient
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('Error deleting transaction:', error);
+        throw error;
+      }
+
+      console.log('Transaction deleted successfully');
+      return { error: null };
+    } catch (error) {
+      console.error('Error in delete:', error);
+      return { error };
+    }
   }
 };

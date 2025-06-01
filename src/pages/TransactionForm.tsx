@@ -40,7 +40,11 @@ export default function TransactionForm() {
     try {
       const { data, error } = await transactionOperations.getById(id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading transaction:', error);
+        throw error;
+      }
+      
       if (data) {
         setFormData({
           description: data.description,
@@ -63,8 +67,10 @@ export default function TransactionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with data:', formData);
 
     if (!formData.description.trim() || !formData.amount) {
+      console.log('Validation failed: missing required fields');
       toast({
         title: "Campos obrigatórios",
         description: "Preencha todos os campos obrigatórios.",
@@ -73,20 +79,34 @@ export default function TransactionForm() {
       return;
     }
 
+    if (isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
+      console.log('Validation failed: invalid amount');
+      toast({
+        title: "Valor inválido",
+        description: "Por favor, insira um valor válido maior que zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Get current user
+      // Check authentication first
+      console.log('Checking user authentication...');
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       
-      if (userError || !user) {
-        toast({
-          title: "Erro de autenticação",
-          description: "Você precisa estar logado para criar transações.",
-          variant: "destructive",
-        });
-        return;
+      if (userError) {
+        console.error('Authentication error:', userError);
+        throw new Error('Erro de autenticação: ' + userError.message);
       }
+      
+      if (!user) {
+        console.error('No user found');
+        throw new Error('Usuário não encontrado. Faça login novamente.');
+      }
+
+      console.log('User authenticated:', user.id);
 
       const transactionData: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'> = {
         user_id: user.id,
@@ -95,32 +115,36 @@ export default function TransactionForm() {
         type: formData.type,
         date: formData.date,
         is_recurring: formData.is_recurring,
-        recurrence_type: formData.is_recurring ? formData.recurrence_type || null : null,
+        recurrence_type: formData.is_recurring ? (formData.recurrence_type || null) : null,
         category_id: null,
       };
 
-      console.log('Saving transaction:', transactionData);
+      console.log('Transaction data to save:', transactionData);
 
       if (isEditing) {
-        const { error } = await transactionOperations.update(id!, transactionData);
+        console.log('Updating existing transaction...');
+        const { data, error } = await transactionOperations.update(id!, transactionData);
 
         if (error) {
           console.error('Error updating transaction:', error);
-          throw error;
+          throw new Error('Erro ao atualizar transação: ' + (error.message || 'Erro desconhecido'));
         }
 
+        console.log('Transaction updated successfully:', data);
         toast({
           title: "Transação atualizada!",
           description: "A transação foi atualizada com sucesso.",
         });
       } else {
-        const { error } = await transactionOperations.create(transactionData);
+        console.log('Creating new transaction...');
+        const { data, error } = await transactionOperations.create(transactionData);
 
         if (error) {
           console.error('Error creating transaction:', error);
-          throw error;
+          throw new Error('Erro ao criar transação: ' + (error.message || 'Erro desconhecido'));
         }
 
+        console.log('Transaction created successfully:', data);
         toast({
           title: "Transação criada!",
           description: "A transação foi registrada com sucesso.",
@@ -128,11 +152,11 @@ export default function TransactionForm() {
       }
 
       navigate('/transactions');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving transaction:', error);
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar a transação. Verifique os dados e tente novamente.",
+        description: error.message || "Não foi possível salvar a transação. Verifique os dados e tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -182,7 +206,7 @@ export default function TransactionForm() {
                   id="amount"
                   type="number"
                   step="0.01"
-                  min="0"
+                  min="0.01"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                   required
