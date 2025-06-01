@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabaseClient, transactionOperations } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { DatabaseTransaction } from '@/types/database';
 
 export default function TransactionForm() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function TransactionForm() {
     type: 'expense' as 'income' | 'expense',
     date: new Date().toISOString().split('T')[0],
     is_recurring: false,
-    recurrence_type: undefined as string | undefined,
+    recurrence_type: undefined as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined,
   });
 
   const [loading, setLoading] = useState(false);
@@ -87,7 +88,7 @@ export default function TransactionForm() {
         return;
       }
 
-      const transactionData = {
+      const transactionData: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'> = {
         user_id: user.id,
         description: formData.description.trim(),
         amount: parseFloat(formData.amount),
@@ -227,7 +228,9 @@ export default function TransactionForm() {
                   <Label className="text-[#DDDDDD]">Frequência</Label>
                   <Select
                     value={formData.recurrence_type}
-                    onValueChange={(value) => setFormData({ ...formData, recurrence_type: value })}
+                    onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') => 
+                      setFormData({ ...formData, recurrence_type: value })
+                    }
                   >
                     <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
                       <SelectValue placeholder="Selecione a frequência" />
