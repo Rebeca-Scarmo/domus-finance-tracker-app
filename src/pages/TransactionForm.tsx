@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { DatabaseTransaction } from '@/types/database';
 
 export default function TransactionForm() {
   const navigate = useNavigate();
@@ -45,13 +46,14 @@ export default function TransactionForm() {
 
       if (error) throw error;
       if (data) {
+        const transaction = data as DatabaseTransaction;
         setFormData({
-          description: data.description,
-          amount: data.amount.toString(),
-          type: data.type,
-          date: data.date,
-          is_recurring: data.is_recurring,
-          recurrence_type: data.recurrence_type,
+          description: transaction.description,
+          amount: transaction.amount.toString(),
+          type: transaction.type,
+          date: transaction.date,
+          is_recurring: transaction.is_recurring,
+          recurrence_type: transaction.recurrence_type || undefined,
         });
       }
     } catch (error) {
@@ -90,7 +92,7 @@ export default function TransactionForm() {
         date: formData.date,
         is_recurring: formData.is_recurring,
         recurrence_type: formData.is_recurring ? formData.recurrence_type : null,
-        category_id: null, // Removed category since we don't have category selection anymore
+        category_id: null,
       };
 
       console.log('Saving transaction:', transactionData);

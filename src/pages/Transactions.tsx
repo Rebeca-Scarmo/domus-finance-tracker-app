@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Transaction } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatabaseTransaction } from '@/types/database';
 
 export default function Transactions() {
   const navigate = useNavigate();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<DatabaseTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -26,7 +26,7 @@ export default function Transactions() {
         .order('date', { ascending: false });
 
       if (error) throw error;
-      setTransactions(data || []);
+      setTransactions((data as DatabaseTransaction[]) || []);
     } catch (error) {
       console.error('Error loading transactions:', error);
     } finally {
