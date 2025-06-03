@@ -45,7 +45,12 @@ export function useTransactionForm() {
 
       if (error) {
         console.error('Error loading transaction:', error);
-        throw error;
+        toast({
+          title: "Erro ao carregar transação",
+          description: "Não foi possível carregar os dados da transação.",
+          variant: "destructive",
+        });
+        return;
       }
       
       if (data) {
@@ -84,7 +89,8 @@ export function useTransactionForm() {
       return;
     }
 
-    if (!formData.amount || isNaN(parseFloat(formData.amount)) || parseFloat(formData.amount) <= 0) {
+    const amountValue = parseFloat(formData.amount);
+    if (!formData.amount || isNaN(amountValue) || amountValue <= 0) {
       console.log('Erro: Valor inválido');
       toast({
         title: "Valor inválido",
@@ -103,21 +109,33 @@ export function useTransactionForm() {
       
       if (userError) {
         console.error('Erro de autenticação:', userError);
-        throw new Error('Erro de autenticação. Faça login novamente.');
+        toast({
+          title: "Erro de autenticação",
+          description: "Faça login novamente para continuar.",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
       }
       
       if (!user) {
         console.error('Usuário não encontrado');
-        throw new Error('Usuário não encontrado. Faça login novamente.');
+        toast({
+          title: "Não autenticado",
+          description: "Faça login para salvar transações.",
+          variant: "destructive",
+        });
+        navigate('/auth');
+        return;
       }
 
       console.log('Usuário autenticado:', user.id);
 
       // Preparar dados para salvar
-      const transactionData: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'> = {
+      const transactionData = {
         user_id: user.id,
         description: formData.description.trim(),
-        amount: parseFloat(formData.amount),
+        amount: amountValue,
         type: formData.type,
         date: formData.date,
         is_recurring: formData.is_recurring,

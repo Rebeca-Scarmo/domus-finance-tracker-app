@@ -19,7 +19,7 @@ export interface DatabaseTransaction {
   type: 'income' | 'expense';
   date: string;
   is_recurring: boolean;
-  recurrence_type?: 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+  recurrence_type: 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
   receipt_url?: string | null;
   created_at: string;
   updated_at: string;

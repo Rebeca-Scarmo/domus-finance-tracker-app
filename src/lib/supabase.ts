@@ -82,7 +82,16 @@ export const transactionOperations = {
     }
   },
 
-  async create(transaction: Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>) {
+  async create(transaction: {
+    user_id: string;
+    description: string;
+    amount: number;
+    type: 'income' | 'expense';
+    date: string;
+    is_recurring: boolean;
+    recurrence_type: string | null;
+    category_id: string | null;
+  }) {
     console.log('=== CRIANDO NOVA TRANSAÇÃO ===');
     console.log('Dados recebidos:', transaction);
     
@@ -126,7 +135,15 @@ export const transactionOperations = {
     }
   },
 
-  async update(id: string, updates: Partial<Omit<DatabaseTransaction, 'id' | 'created_at' | 'updated_at'>>) {
+  async update(id: string, updates: {
+    description?: string;
+    amount?: number;
+    type?: 'income' | 'expense';
+    date?: string;
+    is_recurring?: boolean;
+    recurrence_type?: string | null;
+    category_id?: string | null;
+  }) {
     console.log('=== ATUALIZANDO TRANSAÇÃO ===');
     console.log('ID:', id);
     console.log('Atualizações:', updates);
