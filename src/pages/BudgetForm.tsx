@@ -40,7 +40,10 @@ export default function BudgetForm() {
         .order('name');
 
       if (error) throw error;
-      setCategories(data || []);
+      setCategories((data || []).map(item => ({
+        ...item,
+        type: item.type as 'income' | 'expense'
+      })));
     } catch (error) {
       console.error('Error loading categories:', error);
     }

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Target, Calendar } from 'lucide-react';
@@ -36,7 +35,16 @@ export default function Goals() {
       ]);
 
       if (goalsResult.data) setGoals(goalsResult.data);
-      if (budgetsResult.data) setBudgets(budgetsResult.data);
+      if (budgetsResult.data) {
+        setBudgets(budgetsResult.data.map(item => ({
+          ...item,
+          period: item.period as 'weekly' | 'monthly' | 'yearly',
+          category: item.category ? {
+            ...item.category,
+            type: item.category.type as 'income' | 'expense'
+          } : undefined
+        })));
+      }
     } catch (error) {
       console.error('Error loading goals and budgets:', error);
     } finally {
