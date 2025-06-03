@@ -13,6 +13,9 @@ import Dashboard from "./pages/Dashboard";
 import Transactions from "./pages/Transactions";
 import TransactionForm from "./pages/TransactionForm";
 import Goals from "./pages/Goals";
+import GoalForm from "./pages/GoalForm";
+import BudgetForm from "./pages/BudgetForm";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +64,31 @@ const AppRoutes = () => (
     <Route path="/goals" element={
       <ProtectedRoute>
         <Goals />
+      </ProtectedRoute>
+    } />
+    <Route path="/goals/new" element={
+      <ProtectedRoute>
+        <GoalForm />
+      </ProtectedRoute>
+    } />
+    <Route path="/goals/:id" element={
+      <ProtectedRoute>
+        <GoalForm />
+      </ProtectedRoute>
+    } />
+    <Route path="/budgets/new" element={
+      <ProtectedRoute>
+        <BudgetForm />
+      </ProtectedRoute>
+    } />
+    <Route path="/budgets/:id" element={
+      <ProtectedRoute>
+        <BudgetForm />
+      </ProtectedRoute>
+    } />
+    <Route path="/reports" element={
+      <ProtectedRoute>
+        <Reports />
       </ProtectedRoute>
     } />
     <Route path="*" element={<NotFound />} />
