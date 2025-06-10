@@ -106,14 +106,15 @@ export function GoalContribution({ goalId, goalName, onContributionAdded }: Goal
       <Button
         onClick={() => setIsOpen(true)}
         size="sm"
-        className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+        className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto"
       >
         <Plus className="h-4 w-4 mr-1" />
-        Adicionar
+        <span className="hidden sm:inline">Adicionar</span>
+        <span className="sm:hidden">Valor</span>
       </Button>
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="bg-[#000000] border-[#7C7C7C]">
+        <DialogContent className="bg-[#000000] border-[#7C7C7C] mx-4 sm:mx-auto">
           <DialogHeader>
             <DialogTitle className="text-[#DDDDDD]">
               Adicionar Valor à Meta
@@ -144,11 +145,11 @@ export function GoalContribution({ goalId, goalName, onContributionAdded }: Goal
               />
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4">
               <Button
                 onClick={handleContribution}
                 disabled={loading}
-                className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+                className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto"
               >
                 {loading ? 'Adicionando...' : 'Adicionar Contribuição'}
               </Button>
@@ -156,7 +157,7 @@ export function GoalContribution({ goalId, goalName, onContributionAdded }: Goal
                 type="button"
                 variant="outline"
                 onClick={() => setIsOpen(false)}
-                className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C]"
+                className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C] w-full sm:w-auto"
               >
                 Cancelar
               </Button>

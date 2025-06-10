@@ -92,7 +92,7 @@ export default function Goals() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
         <div>
@@ -101,7 +101,7 @@ export default function Goals() {
         </div>
         <Button
           onClick={() => navigate('/goals/new')}
-          className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 h-12 md:h-auto w-full md:w-auto"
+          className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full md:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nova Meta
@@ -111,12 +111,12 @@ export default function Goals() {
       {/* Goals List */}
       {goals.length === 0 ? (
         <Card className="bg-[#000000] border-[#7C7C7C]">
-          <CardContent className="p-12 text-center">
+          <CardContent className="p-8 md:p-12 text-center">
             <Target className="h-12 w-12 text-[#7C7C7C] mx-auto mb-4" />
             <p className="text-[#7C7C7C] mb-4">Nenhuma meta definida ainda</p>
             <Button
               onClick={() => navigate('/goals/new')}
-              className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+              className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4 mr-2" />
               Criar primeira meta
@@ -124,7 +124,7 @@ export default function Goals() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-4 sm:gap-6">
           {goals.map((goal) => {
             const progress = getProgressPercentage(goal.current_amount, goal.target_amount);
             const daysRemaining = getDaysRemaining(goal.target_date);
@@ -132,48 +132,50 @@ export default function Goals() {
 
             return (
               <Card key={goal.id} className="bg-[#000000] border-[#7C7C7C]">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <CardTitle className="text-[#DDDDDD] flex items-center gap-2">
-                        <Target className="h-5 w-5 text-[#EEB3E7]" />
-                        {goal.name}
+                <CardHeader className="pb-4">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-[#DDDDDD] flex flex-wrap items-center gap-2 text-lg sm:text-xl">
+                        <Target className="h-5 w-5 text-[#EEB3E7] flex-shrink-0" />
+                        <span className="truncate">{goal.name}</span>
                         {isCompleted && (
-                          <span className="text-xs bg-[#EEB3E7] text-[#000000] px-2 py-1 rounded-full">
+                          <span className="text-xs bg-[#EEB3E7] text-[#000000] px-2 py-1 rounded-full whitespace-nowrap">
                             Concluída
                           </span>
                         )}
                       </CardTitle>
                       {goal.description && (
-                        <p className="text-[#7C7C7C] text-sm mt-1">{goal.description}</p>
+                        <p className="text-[#7C7C7C] text-sm mt-1 line-clamp-2">{goal.description}</p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 sm:flex-col sm:gap-2 w-full sm:w-auto">
                       <GoalContribution
                         goalId={goal.id}
                         goalName={goal.name}
                         onContributionAdded={loadGoals}
                       />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => navigate(`/goals/${goal.id}`)}
-                        className="text-[#DDDDDD] hover:bg-[#7C7C7C]"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteGoal(goal.id)}
-                        className="text-[#7C7C7C] hover:bg-red-500/20 hover:text-red-400"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => navigate(`/goals/${goal.id}`)}
+                          className="text-[#DDDDDD] hover:bg-[#7C7C7C] flex-shrink-0"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteGoal(goal.id)}
+                          className="text-[#7C7C7C] hover:bg-red-500/20 hover:text-red-400 flex-shrink-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 pt-0">
                   {/* Progress */}
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -188,10 +190,10 @@ export default function Goals() {
                   </div>
 
                   {/* Timeline */}
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm">
                     <div className="flex items-center gap-1 text-[#7C7C7C]">
-                      <Calendar className="h-4 w-4" />
-                      <span>
+                      <Calendar className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">
                         {daysRemaining > 0 
                           ? `${daysRemaining} dias restantes`
                           : daysRemaining === 0
@@ -200,7 +202,7 @@ export default function Goals() {
                         }
                       </span>
                     </div>
-                    <div className="text-[#7C7C7C]">
+                    <div className="text-[#7C7C7C] truncate">
                       até {new Date(goal.target_date).toLocaleDateString('pt-BR')}
                     </div>
                   </div>
