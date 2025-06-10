@@ -101,7 +101,7 @@ export default function Goals() {
         </div>
         <Button
           onClick={() => navigate('/goals/new')}
-          className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full md:w-auto"
+          className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full md:w-auto flex items-center justify-center"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nova Meta
@@ -116,7 +116,7 @@ export default function Goals() {
             <p className="text-[#7C7C7C] mb-4">Nenhuma meta definida ainda</p>
             <Button
               onClick={() => navigate('/goals/new')}
-              className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto"
+              className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto flex items-center justify-center"
             >
               <Plus className="h-4 w-4 mr-2" />
               Criar primeira meta
@@ -148,28 +148,30 @@ export default function Goals() {
                         <p className="text-[#7C7C7C] text-sm mt-1 line-clamp-2">{goal.description}</p>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-2 sm:flex-col sm:gap-2 w-full sm:w-auto">
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
                       <GoalContribution
                         goalId={goal.id}
                         goalName={goal.name}
                         onContributionAdded={loadGoals}
                       />
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full sm:w-auto">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => navigate(`/goals/${goal.id}`)}
-                          className="text-[#DDDDDD] hover:bg-[#7C7C7C] flex-shrink-0"
+                          className="text-[#DDDDDD] hover:bg-[#7C7C7C] flex-shrink-0 w-full sm:w-10 flex items-center justify-center"
                         >
                           <Edit className="h-4 w-4" />
+                          <span className="ml-2 sm:hidden">Editar</span>
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => deleteGoal(goal.id)}
-                          className="text-[#7C7C7C] hover:bg-red-500/20 hover:text-red-400 flex-shrink-0"
+                          className="text-[#7C7C7C] hover:bg-red-500/20 hover:text-red-400 flex-shrink-0 w-full sm:w-10 flex items-center justify-center"
                         >
                           <Trash2 className="h-4 w-4" />
+                          <span className="ml-2 sm:hidden">Excluir</span>
                         </Button>
                       </div>
                     </div>
