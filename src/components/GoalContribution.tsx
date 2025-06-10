@@ -106,9 +106,9 @@ export function GoalContribution({ goalId, goalName, onContributionAdded }: Goal
       <Button
         onClick={() => setIsOpen(true)}
         size="sm"
-        className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto"
+        className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto flex items-center justify-center gap-1"
       >
-        <Plus className="h-4 w-4 mr-1" />
+        <Plus className="h-4 w-4" />
         <span className="hidden sm:inline">Adicionar</span>
         <span className="sm:hidden">Valor</span>
       </Button>
