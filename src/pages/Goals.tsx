@@ -1,86 +1,55 @@
-
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Plus, Target, Calendar, Edit, Trash2 } from 'lucide-react';
+import { Plus, Target, Calendar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { GoalContribution } from '@/components/GoalContribution';
-
-interface Goal {
-  id: string;
-  name: string;
-  description: string | null;
-  target_amount: number;
-  current_amount: number;
-  start_date: string;
-  target_date: string;
-  is_completed: boolean;
-}
+import { Goal, Budget, Category } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import CategoryManager from '@/components/CategoryManager';
 
 export default function Goals() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadGoals();
+    loadGoalsAndBudgets();
   }, []);
 
-  const loadGoals = async () => {
+  const loadGoalsAndBudgets = async () => {
     try {
-      const { data, error } = await supabase
-        .from('goals')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [goalsResult, budgetsResult] = await Promise.all([
+        supabase
+          .from('goals')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('budgets')
+          .select(`
+            *,
+            category:categories(*)
+          `)
+          .order('created_at', { ascending: false })
+      ]);
 
-      if (error) throw error;
-      setGoals(data || []);
+      if (goalsResult.data) setGoals(goalsResult.data);
+      if (budgetsResult.data) {
+        setBudgets(budgetsResult.data.map(item => ({
+          ...item,
+          period: item.period as 'weekly' | 'monthly' | 'yearly',
+          category: item.category ? {
+            ...item.category,
+            type: item.category.type as 'income' | 'expense'
+          } : undefined
+        })));
+      }
     } catch (error) {
-      console.error('Error loading goals:', error);
+      console.error('Error loading goals and budgets:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const deleteGoal = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('goals')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Meta excluída!",
-        description: "A meta foi excluída com sucesso.",
-      });
-
-      loadGoals();
-    } catch (error) {
-      console.error('Error deleting goal:', error);
-      toast({
-        title: "Erro ao excluir meta",
-        description: "Não foi possível excluir a meta.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getProgressPercentage = (current: number, target: number) => {
-    return Math.min((current / target) * 100, 100);
-  };
-
-  const getDaysRemaining = (targetDate: string) => {
-    const today = new Date();
-    const target = new Date(targetDate);
-    const diffTime = target.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
   };
 
   if (loading) {
@@ -92,128 +61,215 @@ export default function Goals() {
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="space-y-6 md:space-y-8">
       {/* Header */}
-      <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:items-center md:space-y-0">
+      <div className="flex flex-col space-y-4 md:space-y-0">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD]">Metas</h1>
-          <p className="text-[#7C7C7C] text-sm md:text-base">Acompanhe seus objetivos financeiros</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD]">Metas & Orçamentos</h1>
+          <p className="text-[#7C7C7C] text-sm md:text-base">Defina e acompanhe seus objetivos financeiros</p>
         </div>
-        <Button
-          onClick={() => navigate('/goals/new')}
-          className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full md:w-auto flex items-center justify-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Meta
-        </Button>
+        <div className="flex flex-col space-y-3 md:flex-row md:space-y-0 md:space-x-3">
+          <Button
+            onClick={() => navigate('/goals/new')}
+            className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 h-12 md:h-auto w-full md:w-auto"
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Nova Meta
+          </Button>
+          <Button
+            onClick={() => navigate('/budgets/new')}
+            variant="outline"
+            className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C] h-12 md:h-auto w-full md:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Orçamento
+          </Button>
+        </div>
       </div>
 
-      {/* Goals List */}
-      {goals.length === 0 ? (
-        <Card className="bg-[#000000] border-[#7C7C7C]">
-          <CardContent className="p-8 md:p-12 text-center">
-            <Target className="h-12 w-12 text-[#7C7C7C] mx-auto mb-4" />
-            <p className="text-[#7C7C7C] mb-4">Nenhuma meta definida ainda</p>
-            <Button
-              onClick={() => navigate('/goals/new')}
-              className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 w-full sm:w-auto flex items-center justify-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Criar primeira meta
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 sm:gap-6">
-          {goals.map((goal) => {
-            const progress = getProgressPercentage(goal.current_amount, goal.target_amount);
-            const daysRemaining = getDaysRemaining(goal.target_date);
-            const isCompleted = goal.current_amount >= goal.target_amount;
+      <Tabs defaultValue="goals" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-[#000000] border border-[#7C7C7C]">
+          <TabsTrigger value="goals" className="text-[#DDDDDD] data-[state=active]:bg-[#EEB3E7] data-[state=active]:text-[#000000]">
+            Metas
+          </TabsTrigger>
+          <TabsTrigger value="budgets" className="text-[#DDDDDD] data-[state=active]:bg-[#EEB3E7] data-[state=active]:text-[#000000]">
+            Orçamentos
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="text-[#DDDDDD] data-[state=active]:bg-[#EEB3E7] data-[state=active]:text-[#000000]">
+            Categorias
+          </TabsTrigger>
+        </TabsList>
 
-            return (
-              <Card key={goal.id} className="bg-[#000000] border-[#7C7C7C]">
-                <CardHeader className="pb-4">
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-[#DDDDDD] flex flex-wrap items-center gap-2 text-lg sm:text-xl">
-                        <Target className="h-5 w-5 text-[#EEB3E7] flex-shrink-0" />
-                        <span className="truncate">{goal.name}</span>
-                        {isCompleted && (
-                          <span className="text-xs bg-[#EEB3E7] text-[#000000] px-2 py-1 rounded-full whitespace-nowrap">
-                            Concluída
-                          </span>
-                        )}
-                      </CardTitle>
-                      {goal.description && (
-                        <p className="text-[#7C7C7C] text-sm mt-1 line-clamp-2">{goal.description}</p>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-2 w-full sm:w-auto">
-                      <GoalContribution
-                        goalId={goal.id}
-                        goalName={goal.name}
-                        onContributionAdded={loadGoals}
-                      />
-                      <div className="flex gap-2 w-full sm:w-auto">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => navigate(`/goals/${goal.id}`)}
-                          className="text-[#DDDDDD] hover:bg-[#7C7C7C] flex-shrink-0 w-full sm:w-10 flex items-center justify-center gap-2"
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span className="sm:hidden">Editar</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteGoal(goal.id)}
-                          className="text-[#7C7C7C] hover:bg-red-500/20 hover:text-red-400 flex-shrink-0 w-full sm:w-10 flex items-center justify-center gap-2"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          <span className="sm:hidden">Excluir</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-0">
-                  {/* Progress */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#DDDDDD]">Progresso</span>
-                      <span className="text-[#EEB3E7] font-medium">{progress.toFixed(1)}%</span>
-                    </div>
-                    <Progress value={progress} className="h-2" />
-                    <div className="flex justify-between text-sm text-[#7C7C7C]">
-                      <span>R$ {goal.current_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                      <span>R$ {goal.target_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                  </div>
+        <TabsContent value="goals" className="mt-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg md:text-xl font-semibold text-[#DDDDDD] flex items-center gap-2">
+                <Target className="h-5 w-5 text-[#EEB3E7]" />
+                Metas Financeiras
+              </h2>
+            </div>
 
-                  {/* Timeline */}
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-sm">
-                    <div className="flex items-center gap-1 text-[#7C7C7C]">
-                      <Calendar className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">
-                        {daysRemaining > 0 
-                          ? `${daysRemaining} dias restantes`
-                          : daysRemaining === 0
-                          ? 'Prazo é hoje'
-                          : `${Math.abs(daysRemaining)} dias em atraso`
-                        }
-                      </span>
-                    </div>
-                    <div className="text-[#7C7C7C] truncate">
-                      até {new Date(goal.target_date).toLocaleDateString('pt-BR')}
-                    </div>
-                  </div>
+            {goals.length === 0 ? (
+              <Card className="bg-[#000000] border-[#7C7C7C]">
+                <CardContent className="text-center py-12">
+                  <Target className="h-12 w-12 text-[#7C7C7C] mx-auto mb-4" />
+                  <p className="text-[#7C7C7C] mb-4">Nenhuma meta definida</p>
+                  <Button
+                    onClick={() => navigate('/goals/new')}
+                    className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 h-12 md:h-auto w-full md:w-auto"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar primeira meta
+                  </Button>
                 </CardContent>
               </Card>
-            );
-          })}
-        </div>
-      )}
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {goals.map((goal) => {
+                  const progress = (goal.current_amount / goal.target_amount) * 100;
+                  const daysLeft = Math.max(0, Math.ceil(
+                    (new Date(goal.target_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                  ));
+
+                  return (
+                    <Card
+                      key={goal.id}
+                      className="bg-[#000000] border-[#7C7C7C] hover:border-[#EEB3E7] transition-colors cursor-pointer"
+                      onClick={() => navigate(`/goals/${goal.id}`)}
+                    >
+                      <CardHeader className="pb-3">
+                        <div className="flex flex-col space-y-2 md:flex-row md:justify-between md:items-start md:space-y-0">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-[#DDDDDD] text-base md:text-lg truncate">
+                              {goal.name}
+                            </CardTitle>
+                            {goal.description && (
+                              <p className="text-[#7C7C7C] text-sm mt-1">
+                                {goal.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 text-[#7C7C7C] text-sm flex-shrink-0">
+                            <Calendar className="h-4 w-4" />
+                            {daysLeft === 0 ? 'Hoje!' : `${daysLeft} dias`}
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-[#7C7C7C]">
+                              Progresso: {progress.toFixed(1)}%
+                            </span>
+                            <span className={`text-sm font-medium ${
+                              goal.is_completed ? 'text-green-500' : 'text-[#EEB3E7]'
+                            }`}>
+                              {goal.is_completed ? 'Concluída!' : 'Em andamento'}
+                            </span>
+                          </div>
+                          <div className="w-full bg-[#7C7C7C] rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-300 ${
+                                goal.is_completed ? 'bg-green-500' : 'bg-[#EEB3E7]'
+                              }`}
+                              style={{ width: `${Math.min(progress, 100)}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-xs md:text-sm">
+                            <span className="text-[#DDDDDD]">
+                              R$ {goal.current_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                            <span className="text-[#7C7C7C]">
+                              R$ {goal.target_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="budgets" className="mt-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg md:text-xl font-semibold text-[#DDDDDD] flex items-center gap-2">
+                <Plus className="h-5 w-5 text-[#EEB3E7]" />
+                Orçamentos
+              </h2>
+            </div>
+
+            {budgets.length === 0 ? (
+              <Card className="bg-[#000000] border-[#7C7C7C]">
+                <CardContent className="text-center py-12">
+                  <Plus className="h-12 w-12 text-[#7C7C7C] mx-auto mb-4" />
+                  <p className="text-[#7C7C7C] mb-4">Nenhum orçamento definido</p>
+                  <Button
+                    onClick={() => navigate('/budgets/new')}
+                    variant="outline"
+                    className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C] h-12 md:h-auto w-full md:w-auto"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar primeiro orçamento
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {budgets.map((budget) => {
+                  const periodText = {
+                    weekly: 'Semanal',
+                    monthly: 'Mensal',
+                    yearly: 'Anual'
+                  }[budget.period];
+
+                  return (
+                    <Card
+                      key={budget.id}
+                      className="bg-[#000000] border-[#7C7C7C] hover:border-[#EEB3E7] transition-colors cursor-pointer"
+                      onClick={() => navigate(`/budgets/${budget.id}`)}
+                    >
+                      <CardContent className="p-4 md:p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div
+                              className="w-4 h-4 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: budget.category?.color || '#7C7C7C' }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-[#DDDDDD] truncate">
+                                {budget.category?.name}
+                              </p>
+                              <p className="text-sm text-[#7C7C7C]">
+                                {periodText} • {budget.is_recurring ? 'Recorrente' : 'Único'}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0 ml-4">
+                            <p className="font-bold text-[#EEB3E7] text-sm md:text-base">
+                              R$ {budget.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-xs md:text-sm text-[#7C7C7C]">
+                              Limite {periodText.toLowerCase()}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="categories" className="mt-6">
+          <CategoryManager onCategoryCreated={loadGoalsAndBudgets} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

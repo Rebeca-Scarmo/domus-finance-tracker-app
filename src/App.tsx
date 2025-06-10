@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { ThemeProvider } from "@/hooks/useTheme";
 import { Layout } from "@/components/Layout/Layout";
 
 // Pages
@@ -17,7 +16,6 @@ import Goals from "./pages/Goals";
 import GoalForm from "./pages/GoalForm";
 import BudgetForm from "./pages/BudgetForm";
 import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,8 +25,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Carregando...</div>
+      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+        <div className="text-[#DDDDDD]">Carregando...</div>
       </div>
     );
   }
@@ -93,28 +91,21 @@ const AppRoutes = () => (
         <Reports />
       </ProtectedRoute>
     } />
-    <Route path="/settings" element={
-      <ProtectedRoute>
-        <Settings />
-      </ProtectedRoute>
-    } />
     <Route path="*" element={<NotFound />} />
   </Routes>
 );
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
