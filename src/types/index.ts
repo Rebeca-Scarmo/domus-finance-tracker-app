@@ -9,6 +9,18 @@ export interface User {
   push_notifications: boolean;
 }
 
+export interface Profile {
+  id: string;
+  full_name?: string;
+  email?: string;
+  currency: string;
+  language: string;
+  email_notifications: boolean;
+  push_notifications: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Category {
   id: string;
   user_id: string;

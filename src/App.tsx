@@ -16,6 +16,7 @@ import Goals from "./pages/Goals";
 import GoalForm from "./pages/GoalForm";
 import BudgetForm from "./pages/BudgetForm";
 import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,11 @@ const AppRoutes = () => (
     <Route path="/reports" element={
       <ProtectedRoute>
         <Reports />
+      </ProtectedRoute>
+    } />
+    <Route path="/settings" element={
+      <ProtectedRoute>
+        <Settings />
       </ProtectedRoute>
     } />
     <Route path="*" element={<NotFound />} />

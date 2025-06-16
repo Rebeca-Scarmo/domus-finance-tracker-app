@@ -157,6 +157,42 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          currency: string | null
+          email: string | null
+          email_notifications: boolean | null
+          full_name: string | null
+          id: string
+          language: string | null
+          push_notifications: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          email_notifications?: boolean | null
+          full_name?: string | null
+          id: string
+          language?: string | null
+          push_notifications?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          email?: string | null
+          email_notifications?: boolean | null
+          full_name?: string | null
+          id?: string
+          language?: string | null
+          push_notifications?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           amount: number

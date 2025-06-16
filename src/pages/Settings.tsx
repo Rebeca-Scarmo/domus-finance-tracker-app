@@ -32,7 +32,7 @@ export default function Settings() {
   const fetchUserProfile = async () => {
     try {
       const { data, error } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*')
         .eq('id', user?.id)
         .single();
@@ -74,7 +74,7 @@ export default function Settings() {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('users')
+        .from('profiles')
         .upsert({
           id: user.id,
           ...userProfile,
