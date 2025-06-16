@@ -1,18 +1,21 @@
+
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Target, Calendar } from 'lucide-react';
+import { Plus, Target, Calendar, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Goal, Budget, Category } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CategoryManager from '@/components/CategoryManager';
+import GoalContribution from '@/components/GoalContribution';
 
 export default function Goals() {
   const navigate = useNavigate();
   const [goals, setGoals] = useState<Goal[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
   useEffect(() => {
     loadGoalsAndBudgets();
@@ -52,10 +55,96 @@ export default function Goals() {
     }
   };
 
+  const handleGoalClick = (goal: Goal) => {
+    setSelectedGoal(goal);
+  };
+
+  const handleBackToGoals = () => {
+    setSelectedGoal(null);
+    loadGoalsAndBudgets(); // Refresh data when going back
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-[#DDDDDD]">Carregando...</div>
+      </div>
+    );
+  }
+
+  // Show goal detail view when a goal is selected
+  if (selectedGoal) {
+    const progress = (selectedGoal.current_amount / selectedGoal.target_amount) * 100;
+    const daysLeft = Math.max(0, Math.ceil(
+      (new Date(selectedGoal.target_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+    ));
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={handleBackToGoals}
+            variant="outline"
+            className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C]"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+          <h1 className="text-2xl md:text-3xl font-bold text-[#DDDDDD]">{selectedGoal.name}</h1>
+        </div>
+
+        <Card className="bg-[#000000] border-[#7C7C7C]">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col space-y-2 md:flex-row md:justify-between md:items-start md:space-y-0">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-[#DDDDDD] text-xl">
+                  {selectedGoal.name}
+                </CardTitle>
+                {selectedGoal.description && (
+                  <p className="text-[#7C7C7C] text-sm mt-1">
+                    {selectedGoal.description}
+                  </p>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-[#7C7C7C] text-sm flex-shrink-0">
+                <Calendar className="h-4 w-4" />
+                {daysLeft === 0 ? 'Hoje!' : `${daysLeft} dias`}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-[#7C7C7C]">
+                  Progresso: {progress.toFixed(1)}%
+                </span>
+                <span className={`text-sm font-medium ${
+                  selectedGoal.is_completed ? 'text-green-500' : 'text-[#EEB3E7]'
+                }`}>
+                  {selectedGoal.is_completed ? 'Concluída!' : 'Em andamento'}
+                </span>
+              </div>
+              <div className="w-full bg-[#7C7C7C] rounded-full h-3">
+                <div
+                  className={`h-3 rounded-full transition-all duration-300 ${
+                    selectedGoal.is_completed ? 'bg-green-500' : 'bg-[#EEB3E7]'
+                  }`}
+                  style={{ width: `${Math.min(progress, 100)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-lg font-medium">
+                <span className="text-[#DDDDDD]">
+                  R$ {selectedGoal.current_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+                <span className="text-[#7C7C7C]">
+                  R$ {selectedGoal.target_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <GoalContribution goal={selectedGoal} onContribution={loadGoalsAndBudgets} />
       </div>
     );
   }
@@ -135,7 +224,7 @@ export default function Goals() {
                     <Card
                       key={goal.id}
                       className="bg-[#000000] border-[#7C7C7C] hover:border-[#EEB3E7] transition-colors cursor-pointer"
-                      onClick={() => navigate(`/goals/${goal.id}`)}
+                      onClick={() => handleGoalClick(goal)}
                     >
                       <CardHeader className="pb-3">
                         <div className="flex flex-col space-y-2 md:flex-row md:justify-between md:items-start md:space-y-0">
