@@ -24,6 +24,7 @@ const navigation = [
 
 export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
   const { signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -47,12 +48,25 @@ export function Sidebar() {
         </Button>
       </div>
 
+      {/* Desktop toggle button - always visible */}
+      <div className="hidden md:block fixed top-4 left-4 z-50">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-[#DDDDDD] h-10 w-10 bg-[#000000] border border-[#7C7C7C] hover:bg-[#7C7C7C]"
+          onClick={() => setIsDesktopOpen(!isDesktopOpen)}
+        >
+          {isDesktopOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </Button>
+      </div>
+
       {/* Desktop/Mobile Sidebar */}
       <div className={`
         ${isOpen ? 'block' : 'hidden'} md:block
-        fixed md:static top-16 md:top-0 left-0 right-0 md:right-auto
+        ${isDesktopOpen ? 'md:translate-x-0' : 'md:-translate-x-full'}
+        fixed top-16 md:top-0 left-0 right-0 md:right-auto
         w-full md:w-64 bg-[#000000] border-b md:border-r border-[#7C7C7C]
-        z-40 md:z-auto
+        z-40 md:z-30 transition-transform duration-300 ease-in-out
       `}>
         <div className="flex flex-col h-auto md:h-screen">
           {/* Logo - only visible on desktop */}
