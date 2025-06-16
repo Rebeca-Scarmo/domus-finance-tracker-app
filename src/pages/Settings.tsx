@@ -1,368 +1,306 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Bell, 
-  Globe, 
-  Palette, 
-  Shield, 
-  User, 
-  CreditCard, 
-  Download, 
-  Trash2,
-  Crown,
-  Star
-} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Crown, Bell, Globe, DollarSign, Save } from 'lucide-react';
 
 export default function Settings() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
-  
-  // Estados das configurações
-  const [notifications, setNotifications] = useState({
-    transactions: true,
-    budgetAlerts: true,
-    goalReminders: true,
-    weeklyReports: false
-  });
-  
-  const [preferences, setPreferences] = useState({
+  const [loading, setLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState({
+    full_name: '',
+    email: '',
     currency: 'BRL',
     language: 'pt-BR',
-    dateFormat: 'DD/MM/YYYY',
-    theme: 'dark'
-  });
-  
-  const [profile, setProfile] = useState({
-    name: user?.user_metadata?.full_name || '',
-    email: user?.email || ''
+    email_notifications: true,
+    push_notifications: false,
   });
 
-  const [isPremium] = useState(false); // Simulação de status premium
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
 
-  const saveSettings = () => {
-    // Aqui você salvaria as configurações no Supabase
-    toast({
-      title: "Configurações salvas",
-      description: "Suas preferências foram atualizadas com sucesso.",
-    });
+  const fetchUserProfile = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user?.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setUserProfile({
+          full_name: data.full_name || '',
+          email: data.email || user?.email || '',
+          currency: data.currency || 'BRL',
+          language: data.language || 'pt-BR',
+          email_notifications: data.email_notifications ?? true,
+          push_notifications: data.push_notifications ?? false,
+        });
+      } else {
+        // Se não existe perfil, usar dados do auth
+        setUserProfile(prev => ({
+          ...prev,
+          email: user?.email || '',
+          full_name: user?.user_metadata?.full_name || '',
+        }));
+      }
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+      toast({
+        title: "Erro ao carregar perfil",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const exportData = () => {
-    toast({
-      title: "Exportação iniciada",
-      description: "Seus dados estão sendo preparados para download.",
-    });
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .upsert({
+          id: user.id,
+          ...userProfile,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Perfil atualizado!",
+        description: "Suas configurações foram salvas com sucesso.",
+      });
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Erro ao salvar perfil",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deleteAccount = () => {
+  const handleUpgrade = () => {
     toast({
-      title: "Confirmação necessária",
-      description: "Esta ação não pode ser desfeita. Entre em contato com o suporte.",
-      variant: "destructive"
+      title: "Upgrade Premium",
+      description: "Funcionalidade de upgrade será implementada em breve!",
     });
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] p-4 md:p-6 lg:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-[#DDDDDD]">Configurações</h1>
-            <p className="text-[#7C7C7C] mt-1">Gerencie suas preferências e conta</p>
-          </div>
-          {isPremium && (
-            <Badge className="bg-[#EEB3E7] text-[#000000]">
-              <Crown className="w-4 h-4 mr-1" />
-              Premium
-            </Badge>
-          )}
-        </div>
-
-        {/* Perfil do Usuário */}
-        <Card className="bg-[#000000] border-[#7C7C7C]">
-          <CardHeader>
-            <CardTitle className="text-[#DDDDDD] flex items-center">
-              <User className="w-5 h-5 mr-2" />
-              Perfil do Usuário
-            </CardTitle>
-            <CardDescription className="text-[#7C7C7C]">
-              Informações da sua conta
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-[#DDDDDD]">Nome</Label>
-                <Input
-                  id="name"
-                  value={profile.name}
-                  onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                  className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#DDDDDD]">Email</Label>
-                <Input
-                  id="email"
-                  value={profile.email}
-                  disabled
-                  className="bg-[#000000] border-[#7C7C7C] text-[#7C7C7C]"
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Notificações */}
-        <Card className="bg-[#000000] border-[#7C7C7C]">
-          <CardHeader>
-            <CardTitle className="text-[#DDDDDD] flex items-center">
-              <Bell className="w-5 h-5 mr-2" />
-              Notificações
-            </CardTitle>
-            <CardDescription className="text-[#7C7C7C]">
-              Configure quando você quer ser notificado
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-[#DDDDDD]">Transações</Label>
-                <p className="text-sm text-[#7C7C7C]">Notificações de novas transações</p>
-              </div>
-              <Switch
-                checked={notifications.transactions}
-                onCheckedChange={(checked) => 
-                  setNotifications({ ...notifications, transactions: checked })
-                }
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-[#DDDDDD]">Alertas de Orçamento</Label>
-                <p className="text-sm text-[#7C7C7C]">Avisos quando ultrapassar limites</p>
-              </div>
-              <Switch
-                checked={notifications.budgetAlerts}
-                onCheckedChange={(checked) => 
-                  setNotifications({ ...notifications, budgetAlerts: checked })
-                }
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-[#DDDDDD]">Lembretes de Metas</Label>
-                <p className="text-sm text-[#7C7C7C]">Progresso das suas metas</p>
-              </div>
-              <Switch
-                checked={notifications.goalReminders}
-                onCheckedChange={(checked) => 
-                  setNotifications({ ...notifications, goalReminders: checked })
-                }
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-[#DDDDDD]">Relatórios Semanais</Label>
-                <p className="text-sm text-[#7C7C7C]">Resumo semanal das finanças</p>
-              </div>
-              <Switch
-                checked={notifications.weeklyReports}
-                onCheckedChange={(checked) => 
-                  setNotifications({ ...notifications, weeklyReports: checked })
-                }
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Preferências */}
-        <Card className="bg-[#000000] border-[#7C7C7C]">
-          <CardHeader>
-            <CardTitle className="text-[#DDDDDD] flex items-center">
-              <Globe className="w-5 h-5 mr-2" />
-              Preferências
-            </CardTitle>
-            <CardDescription className="text-[#7C7C7C]">
-              Personalize sua experiência
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[#DDDDDD]">Moeda</Label>
-                <Select value={preferences.currency} onValueChange={(value) => 
-                  setPreferences({ ...preferences, currency: value })
-                }>
-                  <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                    <SelectItem value="BRL" className="text-[#DDDDDD]">Real (R$)</SelectItem>
-                    <SelectItem value="USD" className="text-[#DDDDDD]">Dólar ($)</SelectItem>
-                    <SelectItem value="EUR" className="text-[#DDDDDD]">Euro (€)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#DDDDDD]">Idioma</Label>
-                <Select value={preferences.language} onValueChange={(value) => 
-                  setPreferences({ ...preferences, language: value })
-                }>
-                  <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                    <SelectItem value="pt-BR" className="text-[#DDDDDD]">Português</SelectItem>
-                    <SelectItem value="en-US" className="text-[#DDDDDD]">English</SelectItem>
-                    <SelectItem value="es-ES" className="text-[#DDDDDD]">Español</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#DDDDDD]">Formato de Data</Label>
-                <Select value={preferences.dateFormat} onValueChange={(value) => 
-                  setPreferences({ ...preferences, dateFormat: value })
-                }>
-                  <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                    <SelectItem value="DD/MM/YYYY" className="text-[#DDDDDD]">DD/MM/AAAA</SelectItem>
-                    <SelectItem value="MM/DD/YYYY" className="text-[#DDDDDD]">MM/DD/AAAA</SelectItem>
-                    <SelectItem value="YYYY-MM-DD" className="text-[#DDDDDD]">AAAA-MM-DD</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[#DDDDDD]">Tema</Label>
-                <Select value={preferences.theme} onValueChange={(value) => 
-                  setPreferences({ ...preferences, theme: value })
-                }>
-                  <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                    <SelectItem value="dark" className="text-[#DDDDDD]">Escuro</SelectItem>
-                    <SelectItem value="light" className="text-[#DDDDDD]">Claro</SelectItem>
-                    <SelectItem value="auto" className="text-[#DDDDDD]">Automático</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Plano Premium */}
-        <Card className="bg-gradient-to-r from-[#EEB3E7]/10 to-[#EEB3E7]/5 border-[#EEB3E7]">
-          <CardHeader>
-            <CardTitle className="text-[#DDDDDD] flex items-center">
-              <Crown className="w-5 h-5 mr-2 text-[#EEB3E7]" />
-              Plano Premium
-            </CardTitle>
-            <CardDescription className="text-[#7C7C7C]">
-              Desbloqueie recursos avançados
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!isPremium ? (
-              <>
-                <div className="space-y-3">
-                  <div className="flex items-center text-[#DDDDDD]">
-                    <Star className="w-4 h-4 mr-2 text-[#EEB3E7]" />
-                    Relatórios avançados e análises detalhadas
-                  </div>
-                  <div className="flex items-center text-[#DDDDDD]">
-                    <Star className="w-4 h-4 mr-2 text-[#EEB3E7]" />
-                    Metas ilimitadas e categorias personalizadas
-                  </div>
-                  <div className="flex items-center text-[#DDDDDD]">
-                    <Star className="w-4 h-4 mr-2 text-[#EEB3E7]" />
-                    Exportação de dados em múltiplos formatos
-                  </div>
-                  <div className="flex items-center text-[#DDDDDD]">
-                    <Star className="w-4 h-4 mr-2 text-[#EEB3E7]" />
-                    Suporte prioritário
-                  </div>
-                </div>
-                <Button className="w-full bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90">
-                  Fazer Upgrade - R$ 9,90/mês
-                </Button>
-              </>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-[#DDDDDD] mb-2">🎉 Você já é Premium!</p>
-                <p className="text-[#7C7C7C] text-sm">Obrigado por apoiar o DOMUS</p>
-                <Button variant="outline" className="mt-4 border-[#EEB3E7] text-[#EEB3E7]">
-                  Gerenciar Assinatura
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Segurança e Dados */}
-        <Card className="bg-[#000000] border-[#7C7C7C]">
-          <CardHeader>
-            <CardTitle className="text-[#DDDDDD] flex items-center">
-              <Shield className="w-5 h-5 mr-2" />
-              Segurança e Dados
-            </CardTitle>
-            <CardDescription className="text-[#7C7C7C]">
-              Gerencie seus dados e segurança
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C]/20"
-              onClick={exportData}
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar Dados
-            </Button>
-            
-            <Separator className="bg-[#7C7C7C]" />
-            
-            <Button 
-              variant="destructive" 
-              className="w-full"
-              onClick={deleteAccount}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Excluir Conta
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Botões de Ação */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Button 
-            onClick={saveSettings}
-            className="flex-1 bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
-          >
-            Salvar Configurações
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={signOut}
-            className="flex-1 border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C]/20"
-          >
-            Sair da Conta
-          </Button>
-        </div>
+    <div className="max-w-4xl mx-auto space-y-6">
+      <div className="flex items-center gap-3 mb-6">
+        <User className="h-8 w-8 text-[#EEB3E7]" />
+        <h1 className="text-3xl font-bold text-[#DDDDDD]">Configurações</h1>
       </div>
+
+      {/* Perfil do Usuário */}
+      <Card className="bg-[#000000] border-[#7C7C7C]">
+        <CardHeader>
+          <CardTitle className="text-[#DDDDDD] flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Perfil do Usuário
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#DDDDDD] mb-2">
+                Nome Completo
+              </label>
+              <Input
+                value={userProfile.full_name}
+                onChange={(e) => setUserProfile(prev => ({ ...prev, full_name: e.target.value }))}
+                className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD] placeholder:text-[#7C7C7C]"
+                placeholder="Seu nome completo"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#DDDDDD] mb-2">
+                Email
+              </label>
+              <Input
+                value={userProfile.email}
+                onChange={(e) => setUserProfile(prev => ({ ...prev, email: e.target.value }))}
+                className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD] placeholder:text-[#7C7C7C]"
+                placeholder="seu@email.com"
+                type="email"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#DDDDDD] mb-2">
+                <DollarSign className="inline h-4 w-4 mr-1" />
+                Moeda
+              </label>
+              <Select
+                value={userProfile.currency}
+                onValueChange={(value) => setUserProfile(prev => ({ ...prev, currency: value }))}
+              >
+                <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#000000] border-[#7C7C7C]">
+                  <SelectItem value="BRL" className="text-[#DDDDDD]">Real Brasileiro (BRL)</SelectItem>
+                  <SelectItem value="USD" className="text-[#DDDDDD]">Dólar Americano (USD)</SelectItem>
+                  <SelectItem value="EUR" className="text-[#DDDDDD]">Euro (EUR)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#DDDDDD] mb-2">
+                <Globe className="inline h-4 w-4 mr-1" />
+                Idioma
+              </label>
+              <Select
+                value={userProfile.language}
+                onValueChange={(value) => setUserProfile(prev => ({ ...prev, language: value }))}
+              >
+                <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#000000] border-[#7C7C7C]">
+                  <SelectItem value="pt-BR" className="text-[#DDDDDD]">Português (Brasil)</SelectItem>
+                  <SelectItem value="en-US" className="text-[#DDDDDD]">English (US)</SelectItem>
+                  <SelectItem value="es-ES" className="text-[#DDDDDD]">Español</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleSaveProfile}
+            disabled={loading}
+            className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {loading ? 'Salvando...' : 'Salvar Perfil'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Notificações */}
+      <Card className="bg-[#000000] border-[#7C7C7C]">
+        <CardHeader>
+          <CardTitle className="text-[#DDDDDD] flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Notificações
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[#DDDDDD] font-medium">Notificações por Email</p>
+              <p className="text-[#7C7C7C] text-sm">Receba atualizações e lembretes por email</p>
+            </div>
+            <Switch
+              checked={userProfile.email_notifications}
+              onCheckedChange={(checked) => setUserProfile(prev => ({ ...prev, email_notifications: checked }))}
+              className="data-[state=checked]:bg-[#EEB3E7]"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[#DDDDDD] font-medium">Notificações Push</p>
+              <p className="text-[#7C7C7C] text-sm">Receba notificações no navegador</p>
+            </div>
+            <Switch
+              checked={userProfile.push_notifications}
+              onCheckedChange={(checked) => setUserProfile(prev => ({ ...prev, push_notifications: checked }))}
+              className="data-[state=checked]:bg-[#EEB3E7]"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Upgrade Premium */}
+      <Card className="bg-gradient-to-r from-[#EEB3E7]/10 to-[#EEB3E7]/5 border-[#EEB3E7]/50">
+        <CardHeader>
+          <CardTitle className="text-[#EEB3E7] flex items-center gap-2">
+            <Crown className="h-5 w-5" />
+            Upgrade Premium
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <p className="text-[#DDDDDD]">
+              Desbloqueie recursos premium e tenha acesso a funcionalidades avançadas:
+            </p>
+            <ul className="space-y-2 text-[#DDDDDD]">
+              <li className="flex items-center gap-2">
+                <div className="h-2 w-2 bg-[#EEB3E7] rounded-full" />
+                Relatórios avançados e análises detalhadas
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-2 w-2 bg-[#EEB3E7] rounded-full" />
+                Metas ilimitadas e orçamentos personalizados
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-2 w-2 bg-[#EEB3E7] rounded-full" />
+                Sincronização automática com bancos
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-2 w-2 bg-[#EEB3E7] rounded-full" />
+                Suporte prioritário
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="h-2 w-2 bg-[#EEB3E7] rounded-full" />
+                Backup automático na nuvem
+              </li>
+            </ul>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex-1 p-4 border border-[#7C7C7C] rounded-lg">
+              <h4 className="text-[#DDDDDD] font-semibold mb-2">Plano Mensal</h4>
+              <p className="text-[#EEB3E7] text-2xl font-bold">R$ 19,90<span className="text-sm text-[#7C7C7C]">/mês</span></p>
+              <Button
+                onClick={handleUpgrade}
+                className="w-full mt-3 bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+              >
+                Assinar Mensal
+              </Button>
+            </div>
+            
+            <div className="flex-1 p-4 border-2 border-[#EEB3E7] rounded-lg bg-[#EEB3E7]/5">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[#DDDDDD] font-semibold">Plano Anual</h4>
+                <span className="bg-[#EEB3E7] text-[#000000] text-xs px-2 py-1 rounded-full font-medium">
+                  Economize 20%
+                </span>
+              </div>
+              <p className="text-[#EEB3E7] text-2xl font-bold">R$ 159,90<span className="text-sm text-[#7C7C7C]">/ano</span></p>
+              <p className="text-[#7C7C7C] text-sm">Equivale a R$ 13,33/mês</p>
+              <Button
+                onClick={handleUpgrade}
+                className="w-full mt-3 bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
+              >
+                Assinar Anual
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
