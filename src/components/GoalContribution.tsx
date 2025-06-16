@@ -49,16 +49,25 @@ export default function GoalContribution({ goal, onContribution }: GoalContribut
 
       if (updateError) throw updateError;
 
-      // Record the contribution
-      const { error: contributionError } = await supabase
-        .from('goal_contributions')
-        .insert({
-          goal_id: goal.id,
-          amount: type === 'add' ? contributionAmount : -contributionAmount,
-          description: type === 'add' ? 'Contribuição adicionada' : 'Contribuição removida'
-        });
+      // Record the contribution using raw SQL since the types aren't updated yet
+      const { error: contributionError } = await supabase.rpc('insert_goal_contribution', {
+        p_goal_id: goal.id,
+        p_amount: type === 'add' ? contributionAmount : -contributionAmount,
+        p_description: type === 'add' ? 'Contribuição adicionada' : 'Contribuição removida'
+      });
 
-      if (contributionError) throw contributionError;
+      if (contributionError) {
+        // Fallback to direct table insert if RPC doesn't exist
+        const { error: fallbackError } = await supabase
+          .from('goal_contributions' as any)
+          .insert({
+            goal_id: goal.id,
+            amount: type === 'add' ? contributionAmount : -contributionAmount,
+            description: type === 'add' ? 'Contribuição adicionada' : 'Contribuição removida'
+          });
+
+        if (fallbackError) throw fallbackError;
+      }
 
       toast({
         title: "Contribuição registrada!",
@@ -103,7 +112,7 @@ export default function GoalContribution({ goal, onContribution }: GoalContribut
             <Button
               onClick={() => handleContribution('add')}
               disabled={loading || !amount}
-              className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 flex-1"
+              className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90 flex-1 flex items-center justify-center"
             >
               <Plus className="h-4 w-4 mr-2" />
               Adicionar
@@ -112,7 +121,7 @@ export default function GoalContribution({ goal, onContribution }: GoalContribut
               onClick={() => handleContribution('subtract')}
               disabled={loading || !amount}
               variant="outline"
-              className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C] flex-1"
+              className="border-[#7C7C7C] text-[#DDDDDD] hover:bg-[#7C7C7C] flex-1 flex items-center justify-center"
             >
               <Minus className="h-4 w-4 mr-2" />
               Remover

@@ -83,6 +83,38 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_contributions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          goal_id: string
+          id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          goal_id: string
+          id?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          goal_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_contributions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           created_at: string

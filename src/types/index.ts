@@ -44,6 +44,14 @@ export interface Goal {
   is_completed: boolean;
 }
 
+export interface GoalContribution {
+  id: string;
+  goal_id: string;
+  amount: number;
+  description?: string;
+  created_at: string;
+}
+
 export interface Budget {
   id: string;
   user_id: string;
