@@ -78,6 +78,13 @@ export default function Auth() {
     <div className="min-h-screen bg-[#000000] flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-[#000000] border-[#7C7C7C]">
         <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/lovable-uploads/5e6b05e1-c4bc-43db-80a1-1687729d3257.png" 
+              alt="DOMUS Logo" 
+              className="w-16 h-16"
+            />
+          </div>
           <h1 className="text-3xl font-bold text-[#EEB3E7] mb-2">DOMUS</h1>
           <CardTitle className="text-[#DDDDDD]">
             {getTitle()}
