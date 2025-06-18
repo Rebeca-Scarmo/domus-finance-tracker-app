@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,15 +8,28 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Auth() {
+  const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user, signIn, signUp, resetPassword } = useAuth();
+  const { user, signIn, signUp, resetPassword, updatePassword } = useAuth();
 
-  if (user) {
+  useEffect(() => {
+    // Verificar se é um link de redefinição de senha
+    const isReset = searchParams.get('reset') === 'true';
+    if (isReset) {
+      setIsResetPassword(true);
+      setIsLogin(false);
+      setIsForgotPassword(false);
+    }
+  }, [searchParams]);
+
+  if (user && !isResetPassword) {
     return <Navigate to="/" replace />;
   }
 
@@ -25,7 +38,14 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isForgotPassword) {
+      if (isResetPassword) {
+        if (password !== confirmPassword) {
+          throw new Error('As senhas não coincidem');
+        }
+        await updatePassword(password);
+        setIsResetPassword(false);
+        setIsLogin(true);
+      } else if (isForgotPassword) {
         await resetPassword(email);
         setIsForgotPassword(false);
       } else if (isLogin) {
@@ -41,11 +61,13 @@ export default function Auth() {
   };
 
   const getTitle = () => {
+    if (isResetPassword) return 'Redefinir Senha';
     if (isForgotPassword) return 'Recuperar Senha';
     return isLogin ? 'Entrar' : 'Criar Conta';
   };
 
   const getDescription = () => {
+    if (isResetPassword) return 'Digite sua nova senha';
     if (isForgotPassword) return 'Digite seu email para receber as instruções de recuperação';
     return isLogin 
       ? 'Entre na sua conta para continuar' 
@@ -67,7 +89,7 @@ export default function Auth() {
 
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {!isLogin && !isForgotPassword && (
+            {!isLogin && !isForgotPassword && !isResetPassword && (
               <div className="space-y-2">
                 <Label htmlFor="fullName" className="text-[#DDDDDD]">
                   Nome Completo
@@ -77,32 +99,34 @@ export default function Auth() {
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin && !isForgotPassword}
+                  required={!isLogin && !isForgotPassword && !isResetPassword}
                   className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD] focus:border-[#EEB3E7]"
                   placeholder="Seu nome completo"
                 />
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#DDDDDD]">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD] focus:border-[#EEB3E7]"
-                placeholder="seu@email.com"
-              />
-            </div>
+            {!isResetPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-[#DDDDDD]">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD] focus:border-[#EEB3E7]"
+                  placeholder="seu@email.com"
+                />
+              </div>
+            )}
 
             {!isForgotPassword && (
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-[#DDDDDD]">
-                  Senha
+                  {isResetPassword ? 'Nova Senha' : 'Senha'}
                 </Label>
                 <Input
                   id="password"
@@ -111,7 +135,24 @@ export default function Auth() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD] focus:border-[#EEB3E7]"
-                  placeholder="Sua senha"
+                  placeholder={isResetPassword ? "Sua nova senha" : "Sua senha"}
+                />
+              </div>
+            )}
+
+            {isResetPassword && (
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-[#DDDDDD]">
+                  Confirmar Nova Senha
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD] focus:border-[#EEB3E7]"
+                  placeholder="Confirme sua nova senha"
                 />
               </div>
             )}
@@ -124,11 +165,13 @@ export default function Auth() {
               className="w-full bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
             >
               {loading ? 'Carregando...' : (
-                isForgotPassword ? 'Enviar Email' : (isLogin ? 'Entrar' : 'Criar Conta')
+                isResetPassword ? 'Redefinir Senha' :
+                isForgotPassword ? 'Enviar Email' : 
+                (isLogin ? 'Entrar' : 'Criar Conta')
               )}
             </Button>
 
-            {isLogin && !isForgotPassword && (
+            {isLogin && !isForgotPassword && !isResetPassword && (
               <Button
                 type="button"
                 variant="ghost"
@@ -151,7 +194,7 @@ export default function Auth() {
               >
                 Voltar para o login
               </Button>
-            ) : (
+            ) : !isResetPassword && (
               <Button
                 type="button"
                 variant="ghost"
