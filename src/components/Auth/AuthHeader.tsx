@@ -27,9 +27,10 @@ export function AuthHeader({ isLogin, isForgotPassword, isResetPassword }: AuthH
     <CardHeader className="text-center">
       <div className="flex justify-center mb-4">
         <img 
-          src="/lovable-uploads/5e6b05e1-c4bc-43db-80a1-1687729d3257.png" 
+          src="/lovable-uploads/aed0458b-5540-4810-abe5-3bc5ac443873.png" 
           alt="DOMUS Logo" 
           className="w-16 h-16"
+          style={{ backgroundColor: 'transparent' }}
         />
       </div>
       <h1 className="text-3xl font-bold text-[#EEB3E7] mb-2">DOMUS</h1>
