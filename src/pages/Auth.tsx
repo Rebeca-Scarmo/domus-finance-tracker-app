@@ -14,7 +14,7 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn, signUp, resetPassword } = useAuth();
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -26,7 +26,8 @@ export default function Auth() {
 
     try {
       if (isForgotPassword) {
-        await handleForgotPassword();
+        await resetPassword(email);
+        setIsForgotPassword(false);
       } else if (isLogin) {
         await signIn(email, password);
       } else {
@@ -36,31 +37,6 @@ export default function Auth() {
       console.error('Auth error:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth?reset=true`,
-      });
-
-      if (error) throw error;
-
-      // Mostrar mensagem de sucesso usando toast
-      toast({
-        title: "Email enviado!",
-        description: "Verifique seu email para redefinir sua senha.",
-      });
-      
-      setIsForgotPassword(false);
-    } catch (error: any) {
-      toast({
-        title: "Erro ao enviar email",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
     }
   };
 
