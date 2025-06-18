@@ -11,8 +11,6 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  updatePassword: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -110,50 +108,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const resetPassword = async (email: string) => {
-    try {
-      // Usar a URL atual do projeto em vez de localhost
-      const currentUrl = window.location.origin;
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${currentUrl}/auth?reset=true`,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Email enviado!",
-        description: "Verifique seu email para redefinir sua senha.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao enviar email",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
-  const updatePassword = async (password: string) => {
-    try {
-      const { error } = await supabase.auth.updateUser({ password });
-
-      if (error) throw error;
-
-      toast({
-        title: "Senha atualizada com sucesso!",
-        description: "Sua senha foi redefinida.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao atualizar senha",
-        description: error.message,
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   return (
     <AuthContext.Provider value={{
       user,
@@ -162,8 +116,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp,
       signIn,
       signOut,
-      resetPassword,
-      updatePassword,
     }}>
       {children}
     </AuthContext.Provider>
