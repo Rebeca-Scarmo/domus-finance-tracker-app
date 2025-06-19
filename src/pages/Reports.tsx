@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -46,6 +47,10 @@ export default function Reports() {
 
   const loadReportsData = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
       // Carregar transações com suas categorias
       const { data: transactions } = await supabase
         .from('transactions')
@@ -58,12 +63,8 @@ export default function Reports() {
             type
           )
         `)
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
-
-      // Carregar categorias
-      const { data: categories } = await supabase
-        .from('categories')
-        .select('*');
 
       // Carregar orçamentos com suas categorias
       const { data: budgets } = await supabase
@@ -77,13 +78,17 @@ export default function Reports() {
             type
           )
         `)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       // Carregar metas
       const { data: goals } = await supabase
         .from('goals')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+
+      console.log('Dados carregados:', { transactions, budgets, goals });
 
       if (transactions) {
         processTransactionData(transactions);
@@ -184,61 +189,51 @@ export default function Reports() {
   };
 
   const processBudgetData = (budgets: any[], transactions: any[]) => {
+    console.log('Processando orçamentos:', budgets);
+    console.log('Transações para análise:', transactions);
+
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    const budgetMap = new Map<string, { budgeted: number; color: string; categoryId: string }>();
-    const spentMap = new Map<string, number>();
-
-    // Processar orçamentos
-    budgets.forEach((budget) => {
-      const categoryName = budget.categories?.name || 'Categoria Desconhecida';
-      const categoryColor = budget.categories?.color || '#7C7C7C';
-      const categoryId = budget.categories?.id || budget.category_id;
-      
-      if (!budgetMap.has(categoryName)) {
-        budgetMap.set(categoryName, { budgeted: 0, color: categoryColor, categoryId });
-      }
-      
-      budgetMap.get(categoryName)!.budgeted += parseFloat(budget.amount);
-    });
+    // Criar um mapa para armazenar gastos por categoria
+    const spentByCategory = new Map<string, number>();
 
     // Processar gastos do mês atual por categoria
     transactions.forEach((transaction) => {
-      if (transaction.type === 'expense') {
+      if (transaction.type === 'expense' && transaction.category_id) {
         const date = new Date(transaction.date);
         if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
-          const categoryName = transaction.categories?.name || 'Sem Categoria';
-          const categoryId = transaction.categories?.id;
-          
-          // Só contar gastos que têm categoria e essa categoria tem orçamento
-          if (categoryId) {
-            const budgetEntry = Array.from(budgetMap.entries()).find(([_, data]) => data.categoryId === categoryId);
-            if (budgetEntry) {
-              const [budgetCategoryName] = budgetEntry;
-              if (!spentMap.has(budgetCategoryName)) {
-                spentMap.set(budgetCategoryName, 0);
-              }
-              spentMap.set(budgetCategoryName, spentMap.get(budgetCategoryName)! + parseFloat(transaction.amount));
-            }
-          }
+          const categoryId = transaction.category_id;
+          const currentSpent = spentByCategory.get(categoryId) || 0;
+          spentByCategory.set(categoryId, currentSpent + parseFloat(transaction.amount));
         }
       }
     });
 
-    const budgetArray = Array.from(budgetMap.entries()).map(([category, data]) => {
-      const spent = spentMap.get(category) || 0;
-      const percentage = data.budgeted > 0 ? (spent / data.budgeted) * 100 : 0;
+    console.log('Gastos por categoria:', Array.from(spentByCategory.entries()));
+
+    // Processar orçamentos
+    const budgetArray = budgets.map((budget) => {
+      const categoryName = budget.categories?.name || 'Categoria Desconhecida';
+      const categoryColor = budget.categories?.color || '#7C7C7C';
+      const categoryId = budget.category_id;
+      
+      const spent = spentByCategory.get(categoryId) || 0;
+      const budgeted = parseFloat(budget.amount);
+      const percentage = budgeted > 0 ? (spent / budgeted) * 100 : 0;
+      
+      console.log(`Orçamento ${categoryName}: gasto ${spent}, orçado ${budgeted}, porcentagem ${percentage}%`);
       
       return {
-        category,
-        budgeted: data.budgeted,
+        category: categoryName,
+        budgeted,
         spent,
-        color: data.color,
+        color: categoryColor,
         percentage
       };
     });
 
+    console.log('Dados de orçamento processados:', budgetArray);
     setBudgetData(budgetArray);
   };
 
@@ -273,18 +268,19 @@ export default function Reports() {
             <div className="space-y-3">
               {budgetData.map((budget, index) => {
                 const isOverBudget = budget.percentage > 100;
+                const remaining = budget.budgeted - budget.spent;
                 return (
                   <div key={index} className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-[#DDDDDD] font-medium text-sm">{budget.category}</span>
-                      <span className={`text-xs ${isOverBudget ? 'text-[#7C7C7C]' : 'text-[#EEB3E7]'}`}>
+                      <span className={`text-xs ${isOverBudget ? 'text-red-400' : 'text-[#EEB3E7]'}`}>
                         {budget.percentage.toFixed(1)}%
                       </span>
                     </div>
                     <div className="w-full bg-[#7C7C7C]/30 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${
-                          isOverBudget ? 'bg-[#7C7C7C]' : 'bg-[#EEB3E7]'
+                          isOverBudget ? 'bg-red-400' : 'bg-[#EEB3E7]'
                         }`}
                         style={{ width: `${Math.min(budget.percentage, 100)}%` }}
                       />
@@ -293,6 +289,15 @@ export default function Reports() {
                       <span>Gasto: R$ {budget.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                       <span>Orçado: R$ {budget.budgeted.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                     </div>
+                    {remaining >= 0 ? (
+                      <div className="text-xs text-[#EEB3E7]">
+                        Restante: R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-red-400">
+                        Excedido em: R$ {Math.abs(remaining).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
