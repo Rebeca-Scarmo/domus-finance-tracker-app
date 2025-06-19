@@ -12,6 +12,7 @@ interface FormData {
   date: string;
   is_recurring: boolean;
   recurrence_type: 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined;
+  category_id: string;
 }
 
 export function useTransactionForm() {
@@ -27,6 +28,7 @@ export function useTransactionForm() {
     date: new Date().toISOString().split('T')[0],
     is_recurring: false,
     recurrence_type: undefined,
+    category_id: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -61,6 +63,7 @@ export function useTransactionForm() {
           date: data.date,
           is_recurring: data.is_recurring,
           recurrence_type: data.recurrence_type as 'daily' | 'weekly' | 'monthly' | 'yearly' | undefined,
+          category_id: data.category_id || '',
         });
       }
     } catch (error) {
@@ -140,7 +143,7 @@ export function useTransactionForm() {
         date: formData.date,
         is_recurring: formData.is_recurring,
         recurrence_type: formData.is_recurring && formData.recurrence_type ? formData.recurrence_type : null,
-        category_id: null,
+        category_id: formData.category_id || null,
       };
 
       console.log('Dados preparados para salvar:', transactionData);
