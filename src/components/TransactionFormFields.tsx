@@ -108,7 +108,7 @@ export function TransactionFormFields({ formData, setFormData }: TransactionForm
         <div className="space-y-2">
           <Label className="text-[#DDDDDD]">Categoria</Label>
           <Select
-            value={formData.category_id}
+            value={formData.category_id || 'none'}
             onValueChange={(value) => setFormData({ ...formData, category_id: value === 'none' ? '' : value })}
           >
             <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
