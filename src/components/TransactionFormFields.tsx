@@ -51,6 +51,7 @@ export function TransactionFormFields({ formData, setFormData }: TransactionForm
     }
   };
 
+  // Filtrar categorias baseado no tipo selecionado
   const filteredCategories = categories.filter(cat => cat.type === formData.type);
 
   return (
@@ -116,17 +117,23 @@ export function TransactionFormFields({ formData, setFormData }: TransactionForm
             </SelectTrigger>
             <SelectContent className="bg-[#000000] border-[#7C7C7C] z-50">
               <SelectItem value="none" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Sem categoria</SelectItem>
-              {filteredCategories.map((category) => (
-                <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD] hover:bg-[#7C7C7C]">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: category.color }}
-                    />
-                    {category.name}
-                  </div>
+              {filteredCategories.length === 0 ? (
+                <SelectItem value="no-categories" disabled className="text-[#7C7C7C]">
+                  {formData.type === 'income' ? 'Nenhuma categoria de receita encontrada' : 'Nenhuma categoria de despesa encontrada'}
                 </SelectItem>
-              ))}
+              ) : (
+                filteredCategories.map((category) => (
+                  <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD] hover:bg-[#7C7C7C]">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </div>
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
         </div>

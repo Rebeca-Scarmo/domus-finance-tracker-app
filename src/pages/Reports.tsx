@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -47,10 +46,18 @@ export default function Reports() {
 
   const loadReportsData = async () => {
     try {
-      // Carregar transações
+      // Carregar transações com suas categorias
       const { data: transactions } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          categories (
+            id,
+            name,
+            color,
+            type
+          )
+        `)
         .order('date', { ascending: false });
 
       // Carregar categorias
@@ -58,10 +65,18 @@ export default function Reports() {
         .from('categories')
         .select('*');
 
-      // Carregar orçamentos
+      // Carregar orçamentos com suas categorias
       const { data: budgets } = await supabase
         .from('budgets')
-        .select('*, categories(name, color)')
+        .select(`
+          *,
+          categories (
+            id,
+            name,
+            color,
+            type
+          )
+        `)
         .order('created_at', { ascending: false });
 
       // Carregar metas
@@ -76,7 +91,7 @@ export default function Reports() {
       }
 
       if (budgets && transactions) {
-        processBudgetData(budgets, transactions, categories || []);
+        processBudgetData(budgets, transactions);
       }
 
       if (goals) {
@@ -112,8 +127,8 @@ export default function Reports() {
         monthData.expense += parseFloat(transaction.amount);
 
         // Processar categorias apenas para gastos
-        const categoryName = 'Geral'; // Como não temos categoria vinculada
-        const categoryColor = '#7C7C7C';
+        const categoryName = transaction.categories?.name || 'Sem Categoria';
+        const categoryColor = transaction.categories?.color || '#7C7C7C';
         
         if (!categoryMap.has(categoryName)) {
           categoryMap.set(categoryName, { value: 0, color: categoryColor });
@@ -168,37 +183,45 @@ export default function Reports() {
     setComparisonData(comparisonArray);
   };
 
-  const processBudgetData = (budgets: any[], transactions: any[], categories: any[]) => {
+  const processBudgetData = (budgets: any[], transactions: any[]) => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
 
-    const budgetMap = new Map<string, { budgeted: number; color: string }>();
+    const budgetMap = new Map<string, { budgeted: number; color: string; categoryId: string }>();
     const spentMap = new Map<string, number>();
 
     // Processar orçamentos
     budgets.forEach((budget) => {
-      const categoryName = budget.categories?.name || 'Geral';
+      const categoryName = budget.categories?.name || 'Categoria Desconhecida';
       const categoryColor = budget.categories?.color || '#7C7C7C';
+      const categoryId = budget.categories?.id || budget.category_id;
       
       if (!budgetMap.has(categoryName)) {
-        budgetMap.set(categoryName, { budgeted: 0, color: categoryColor });
+        budgetMap.set(categoryName, { budgeted: 0, color: categoryColor, categoryId });
       }
       
       budgetMap.get(categoryName)!.budgeted += parseFloat(budget.amount);
     });
 
-    // Processar gastos do mês atual
+    // Processar gastos do mês atual por categoria
     transactions.forEach((transaction) => {
       if (transaction.type === 'expense') {
         const date = new Date(transaction.date);
         if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
-          const categoryName = 'Geral'; // Como não temos categoria vinculada
+          const categoryName = transaction.categories?.name || 'Sem Categoria';
+          const categoryId = transaction.categories?.id;
           
-          if (!spentMap.has(categoryName)) {
-            spentMap.set(categoryName, 0);
+          // Só contar gastos que têm categoria e essa categoria tem orçamento
+          if (categoryId) {
+            const budgetEntry = Array.from(budgetMap.entries()).find(([_, data]) => data.categoryId === categoryId);
+            if (budgetEntry) {
+              const [budgetCategoryName] = budgetEntry;
+              if (!spentMap.has(budgetCategoryName)) {
+                spentMap.set(budgetCategoryName, 0);
+              }
+              spentMap.set(budgetCategoryName, spentMap.get(budgetCategoryName)! + parseFloat(transaction.amount));
+            }
           }
-          
-          spentMap.set(categoryName, spentMap.get(categoryName)! + parseFloat(transaction.amount));
         }
       }
     });
