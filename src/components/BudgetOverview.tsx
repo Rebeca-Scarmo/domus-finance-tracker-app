@@ -67,14 +67,14 @@ export function BudgetOverview() {
         transactions.forEach((transaction) => {
           if (transaction.category_id) {
             const currentSpent = spentByCategory.get(transaction.category_id) || 0;
-            spentByCategory.set(transaction.category_id, currentSpent + parseFloat(transaction.amount));
+            spentByCategory.set(transaction.category_id, currentSpent + Number(transaction.amount));
           }
         });
 
         // Processar orçamentos com gastos
         const budgetOverview = budgets.map((budget) => {
           const spent = spentByCategory.get(budget.category_id) || 0;
-          const budgeted = parseFloat(budget.amount);
+          const budgeted = Number(budget.amount);
           const percentage = budgeted > 0 ? (spent / budgeted) * 100 : 0;
 
           return {
@@ -96,6 +96,13 @@ export function BudgetOverview() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatCurrency = (value: number): string => {
+    return Number(value).toLocaleString('pt-BR', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    });
   };
 
   if (loading) {
@@ -168,13 +175,13 @@ export function BudgetOverview() {
                     <div>
                       <p className="text-[#7C7C7C]">Gasto</p>
                       <p className="text-[#DDDDDD] font-medium">
-                        R$ {budget.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        R$ {formatCurrency(budget.spent)}
                       </p>
                     </div>
                     <div>
                       <p className="text-[#7C7C7C]">Orçamento</p>
                       <p className="text-[#DDDDDD] font-medium">
-                        R$ {budget.budgeted.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        R$ {formatCurrency(budget.budgeted)}
                       </p>
                     </div>
                   </div>
@@ -182,11 +189,11 @@ export function BudgetOverview() {
                   <div className="pt-2 border-t border-[#7C7C7C]/30">
                     {remaining >= 0 ? (
                       <p className="text-[#EEB3E7] text-sm">
-                        Disponível: R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        Disponível: R$ {formatCurrency(remaining)}
                       </p>
                     ) : (
                       <p className="text-red-400 text-sm">
-                        Excedido em: R$ {Math.abs(remaining).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        Excedido em: R$ {formatCurrency(Math.abs(remaining))}
                       </p>
                     )}
                   </div>
