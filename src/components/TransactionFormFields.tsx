@@ -109,13 +109,13 @@ export function TransactionFormFields({ formData, setFormData }: TransactionForm
           <Label className="text-[#DDDDDD]">Categoria</Label>
           <Select
             value={formData.category_id}
-            onValueChange={(value) => setFormData({ ...formData, category_id: value })}
+            onValueChange={(value) => setFormData({ ...formData, category_id: value === 'none' ? '' : value })}
           >
             <SelectTrigger className="bg-[#000000] border-[#7C7C7C] text-[#DDDDDD]">
               <SelectValue placeholder="Selecione uma categoria (opcional)" />
             </SelectTrigger>
             <SelectContent className="bg-[#000000] border-[#7C7C7C] z-50">
-              <SelectItem value="" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Sem categoria</SelectItem>
+              <SelectItem value="none" className="text-[#DDDDDD] hover:bg-[#7C7C7C]">Sem categoria</SelectItem>
               {filteredCategories.map((category) => (
                 <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD] hover:bg-[#7C7C7C]">
                   <div className="flex items-center gap-2">
