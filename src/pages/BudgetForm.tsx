@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -185,7 +184,7 @@ export default function BudgetForm() {
                   </SelectTrigger>
                   <SelectContent className="bg-[#000000] border-[#7C7C7C]">
                     {categories.length === 0 ? (
-                      <SelectItem value="" disabled className="text-[#7C7C7C]">
+                      <SelectItem value="no-categories" disabled className="text-[#7C7C7C]">
                         Nenhuma categoria encontrada. Crie uma categoria primeiro.
                       </SelectItem>
                     ) : (
