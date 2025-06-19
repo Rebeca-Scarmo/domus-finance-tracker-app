@@ -34,9 +34,14 @@ export default function BudgetForm() {
 
   const loadCategories = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return;
+
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('user_id', user.id)
         .order('name');
 
       if (error) throw error;
@@ -179,17 +184,23 @@ export default function BudgetForm() {
                     <SelectValue placeholder="Selecione uma categoria" />
                   </SelectTrigger>
                   <SelectContent className="bg-[#000000] border-[#7C7C7C]">
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD] hover:bg-[#7C7C7C]">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: category.color }}
-                          />
-                          {category.name}
-                        </div>
+                    {categories.length === 0 ? (
+                      <SelectItem value="" disabled className="text-[#7C7C7C]">
+                        Nenhuma categoria encontrada. Crie uma categoria primeiro.
                       </SelectItem>
-                    ))}
+                    ) : (
+                      categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id} className="text-[#DDDDDD] hover:bg-[#7C7C7C]">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            {category.name} ({category.type === 'income' ? 'Receita' : 'Despesa'})
+                          </div>
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -238,7 +249,7 @@ export default function BudgetForm() {
             <div className="flex gap-3 pt-4">
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || categories.length === 0}
                 className="bg-[#EEB3E7] text-[#000000] hover:bg-[#EEB3E7]/90"
               >
                 {loading ? 'Salvando...' : (id ? 'Atualizar Orçamento' : 'Criar Orçamento')}

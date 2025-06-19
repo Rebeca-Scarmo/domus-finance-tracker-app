@@ -31,6 +31,17 @@ export default function GoalContribution({ goal, onContribution }: GoalContribut
     setLoading(true);
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Faça login para continuar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const contributionAmount = parseFloat(amount);
       const newCurrentAmount = type === 'add' 
         ? goal.current_amount + contributionAmount
@@ -59,6 +70,26 @@ export default function GoalContribution({ goal, onContribution }: GoalContribut
         });
 
       if (contributionError) throw contributionError;
+
+      // Create transaction for contribution (only when adding)
+      if (type === 'add') {
+        const { error: transactionError } = await supabase
+          .from('transactions')
+          .insert({
+            user_id: user.id,
+            description: `Contribuição para meta: ${goal.name}`,
+            amount: contributionAmount,
+            type: 'expense',
+            date: new Date().toISOString().split('T')[0],
+            is_recurring: false,
+            category_id: null
+          });
+
+        if (transactionError) {
+          console.error('Error creating transaction:', transactionError);
+          // Don't throw here to avoid blocking the contribution
+        }
+      }
 
       toast({
         title: "Contribuição registrada!",
