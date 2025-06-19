@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line } from 'recharts';
@@ -49,10 +48,15 @@ export default function Reports() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) return;
+      if (!user) {
+        console.error('Usuário não autenticado');
+        return;
+      }
+
+      console.log('Carregando dados para o usuário:', user.id);
 
       // Carregar transações com suas categorias
-      const { data: transactions } = await supabase
+      const { data: transactions, error: transactionsError } = await supabase
         .from('transactions')
         .select(`
           *,
@@ -66,8 +70,12 @@ export default function Reports() {
         .eq('user_id', user.id)
         .order('date', { ascending: false });
 
+      if (transactionsError) {
+        console.error('Erro ao carregar transações:', transactionsError);
+      }
+
       // Carregar orçamentos com suas categorias
-      const { data: budgets } = await supabase
+      const { data: budgets, error: budgetsError } = await supabase
         .from('budgets')
         .select(`
           *,
@@ -81,25 +89,37 @@ export default function Reports() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
+      if (budgetsError) {
+        console.error('Erro ao carregar orçamentos:', budgetsError);
+      }
+
       // Carregar metas
-      const { data: goals } = await supabase
+      const { data: goals, error: goalsError } = await supabase
         .from('goals')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      console.log('Dados carregados:', { transactions, budgets, goals });
+      if (goalsError) {
+        console.error('Erro ao carregar metas:', goalsError);
+      }
 
-      if (transactions) {
+      console.log('Dados carregados:', { 
+        transactions: transactions?.length || 0, 
+        budgets: budgets?.length || 0, 
+        goals: goals?.length || 0 
+      });
+
+      if (transactions && transactions.length > 0) {
         processTransactionData(transactions);
         processComparisonData(transactions);
       }
 
-      if (budgets && transactions) {
-        processBudgetData(budgets, transactions);
+      if (budgets && budgets.length > 0) {
+        processBudgetData(budgets, transactions || []);
       }
 
-      if (goals) {
+      if (goals && goals.length > 0) {
         setGoalsProgress(goals);
       }
     } catch (error) {
@@ -189,8 +209,8 @@ export default function Reports() {
   };
 
   const processBudgetData = (budgets: any[], transactions: any[]) => {
-    console.log('Processando orçamentos:', budgets);
-    console.log('Transações para análise:', transactions);
+    console.log('Processando orçamentos:', budgets.length);
+    console.log('Transações para análise:', transactions.length);
 
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
