@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, TrendingDown, TrendingUp } from 'lucide-react';
 
 interface BudgetOverviewData {
@@ -169,13 +168,13 @@ export function BudgetOverview() {
                     <div>
                       <p className="text-[#7C7C7C]">Gasto</p>
                       <p className="text-[#DDDDDD] font-medium">
-                        R$ {budget.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        R$ {budget.spent.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                     <div>
                       <p className="text-[#7C7C7C]">Orçamento</p>
                       <p className="text-[#DDDDDD] font-medium">
-                        R$ {budget.budgeted.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        R$ {budget.budgeted.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>
@@ -183,11 +182,11 @@ export function BudgetOverview() {
                   <div className="pt-2 border-t border-[#7C7C7C]/30">
                     {remaining >= 0 ? (
                       <p className="text-[#EEB3E7] text-sm">
-                        Disponível: R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        Disponível: R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     ) : (
                       <p className="text-red-400 text-sm">
-                        Excedido em: R$ {Math.abs(remaining).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        Excedido em: R$ {Math.abs(remaining).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     )}
                   </div>
